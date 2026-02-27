@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/SolutionItems/">
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="Ecom.ProductService.Application/Ecom.ProductService.Application.csproj" />
+  <Project Path="Ecom.ProductService.Core/Ecom.ProductService.Core.csproj" />
+  <Project Path="Ecom.ProductService.Infrastructure/Ecom.ProductService.Infrastructure.csproj" />
+  <Project Path="Ecom.ProductService/Ecom.ProductService.csproj" />
+</Solution>
