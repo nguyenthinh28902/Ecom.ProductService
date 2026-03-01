@@ -18,9 +18,4 @@
     <ProjectReference Include="..\Ecom.ProductService.Infrastructure\Ecom.ProductService.Infrastructure.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Interface\Web\" />
-    <Folder Include="Service\Web\" />
-  </ItemGroup>
-
 </Project>

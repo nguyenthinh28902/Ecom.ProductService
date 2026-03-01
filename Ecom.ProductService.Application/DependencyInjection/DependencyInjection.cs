@@ -15,9 +15,12 @@ namespace Ecom.ProductService.Application.DependencyInjection
         {
             services.AddDependencyInjectionInfrastructure(configuration);
             services.AddStackExchangeRedis(configuration);
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<ICurrentCustomerService, CurrentCustomerService>();
             services.AddScoped<IBaseService, BaseService>();
-            services.AddScoped<IProductSummaryService, ProductSummaryService>();
+            services.AddCmsApplication();
+            services.AddWebApplication();
             return services;
         }
     }
