@@ -36,5 +36,35 @@ namespace Ecom.ProductService.Controllers.Product
             var products = await _productWebService.GetProductHome();
             return Ok(products);
         }
+
+        /// <summary>
+        /// lấy sản phảm trang danh sách sản phẩm
+        /// </summary>
+        /// <param name="productQueryParameters"></param>
+        /// <returns></returns>
+        [HttpPost("danh-sach-san-pham")]
+        [ProducesResponseType(typeof(IEnumerable<Result<ProductListResponseDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+       
+        public async Task<IActionResult> GetProducts([FromBody]ProductQueryParameters productQueryParameters)
+        {
+            var result = await _productWebService.GetProducts(productQueryParameters);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// lấy sản phảm trang danh sách sản phẩm
+        /// </summary>
+        /// <param name="productQueryParameters"></param>
+        /// <returns></returns>
+        [HttpGet("{Slug}")]
+        [ProducesResponseType(typeof(IEnumerable<Result<ProductDetailDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        
+        public async Task<IActionResult> GetProductDetail(string Slug, [FromQuery(Name = "phienban")] string? version = null)
+        {
+            var result = await _productWebService.GetProductDetail(Slug, version);
+            return Ok(result);
+        }
     }
 }

@@ -14,6 +14,7 @@ namespace Ecom.ProductService.Application.DependencyInjection
         public static IServiceCollection AddWebApplication(this IServiceCollection services)
         {
             services.AddScoped<IProductWebService, ProductWebService>();
+            services.AddScoped<INavigationService, NavigationService>();
             return services;
         }
     }

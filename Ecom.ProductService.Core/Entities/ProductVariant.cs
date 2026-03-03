@@ -41,6 +41,10 @@ public partial class ProductVariant
     [Column(TypeName = "datetime")]
     public DateTime? UpdatedAt { get; set; }
 
+    [StringLength(255)]
+    [Unicode(false)]
+    public string NameAscii { get; set; } = null!;
+
     [ForeignKey("ProductId")]
     [InverseProperty("ProductVariants")]
     public virtual Product Product { get; set; } = null!;

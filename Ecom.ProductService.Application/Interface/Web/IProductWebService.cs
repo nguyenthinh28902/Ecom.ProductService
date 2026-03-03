@@ -8,6 +8,8 @@ namespace Ecom.ProductService.Application.Interface.Web
 {
     public interface IProductWebService
     {
-       Task<Result<HomeProductDisplayDto>> GetProductHome();
+      Task<Result<HomeProductDisplayDto>> GetProductHome();
+      Task<Result<ProductListResponseDto>> GetProducts(ProductQueryParameters query);
+      Task<Result<ProductDetailDto>> GetProductDetail(string slug, string? version);
     }
 }

@@ -161,16 +161,15 @@ namespace Ecom.ProductService.Infrastructure.Repositories
             if (disableTracking)
             {
                 query = query.AsNoTracking();
-            }
-
-            if (include != null)
-            {
-                query = include(query);
-            }
+            }          
 
             if (predicate != null)
             {
                 query = query.Where(predicate);
+            }
+            if (include != null)
+            {
+                query = include(query);
             }
 
             if (ignoreQueryFilters)

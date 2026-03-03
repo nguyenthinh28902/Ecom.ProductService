@@ -2,7 +2,7 @@
 using Ecom.ProductService.Application.Interface.CMS;
 using Ecom.ProductService.Core.Abstractions.Persistence;
 using Ecom.ProductService.Core.Entities;
-using Ecom.ProductService.Core.Enums.Product;
+using Ecom.ProductService.Core.Enums;
 using Ecom.ProductService.Core.Models;
 using Ecom.ProductService.Core.Models.Auth;
 using Ecom.ProductService.Core.Models.Dtos.ProductSummaryService;
@@ -34,14 +34,14 @@ namespace Ecom.ProductService.Application.Service.CMS
             var i = await _unitOfWork.Repository<Brand>().CountAsync(x => x.IsDeleted != true);
             dashboardProductDto.SummaryMetrics.Add(new SummaryMetrics() { Title = "Thương hiệu", value = await _unitOfWork.Repository<Brand>().CountAsync(x => x.IsDeleted != true) });
             dashboardProductDto.SummaryMetrics.Add(new SummaryMetrics() { Title = "Ngành hàng", value = await _unitOfWork.Repository<Category>().CountAsync(x => x.IsDeleted != true) });
-           var totalProducts = await _unitOfWork.Repository<Product>().CountAsync(x => x.IsDeleted != true && x.Status == (byte)ProductStatus.Active);
+           var totalProducts = await _unitOfWork.Repository<Product>().CountAsync(x => x.IsDeleted != true && x.Status == (byte)EntityStatus.Active);
             dashboardProductDto.SummaryMetrics.Add(new SummaryMetrics() { 
                 Title = "Sản phẩm đang kinh doanh", 
                 value = totalProducts,
                 Group = "Group.Products",
                 TitleGroup = "Sản phẩm"
             });
-            var pendingProductsCount = await _unitOfWork.Repository<Product>().CountAsync(x => x.IsDeleted != true && x.Status == (byte)ProductStatus.Active && x.PublishDate <= DateTime.UtcNow.Date);
+            var pendingProductsCount = await _unitOfWork.Repository<Product>().CountAsync(x => x.IsDeleted != true && x.Status == (byte)EntityStatus.Active && x.PublishDate <= DateTime.UtcNow.Date);
             dashboardProductDto.SummaryMetrics.Add(new SummaryMetrics()
             {
                 Title = "Sản phẩm đang chờ mở bán",
