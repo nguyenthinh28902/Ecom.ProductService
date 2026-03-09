@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Ecom.ProductService.Controllers
+namespace Ecom.ProductService.Controllers.Cms
 {
     [Route("api/nganh-hang/quan-ly/thong-ke")]
     [ApiController]

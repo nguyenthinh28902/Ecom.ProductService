@@ -1,6 +1,8 @@
+using Ecom.ProductService.Application.Service.Web;
 using Ecom.ProductService.Common.DependencyInjection;
 using Ecom.ProductService.Common.Extensions;
 using Ecom.ProductService.Common.Helpers;
+using Ecom.ProductService.Controllers.Web;
 using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,5 +42,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGrpcService<OrderProductService>(); 
 
 app.Run();

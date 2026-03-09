@@ -7,6 +7,7 @@ using Ecom.ProductService.Core.Enums;
 using Ecom.ProductService.Core.Models;
 using Ecom.ProductService.Core.Models.Dtos.ProductWeb;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -32,7 +33,7 @@ namespace Ecom.ProductService.Application.Service.Web
         {
             _logger.LogInformation($"{nameof(GetProductHome)} start: ");
             var products = _unitOfWork.Repository<Product>()
-                .GetAll(x=> x.Status == (byte)EntityStatus.Active && x.PublishDate >= DateTime.UtcNow.Date);
+                .GetAll(x=> x.Status == (byte)EntityStatus.Active && x.PublishDate <= DateTime.UtcNow.Date);
             var NewArrivals = await products.Where(x => x.PublishDate.HasValue && x.PublishDate.Value > DateTime.Now.AddDays(-30)).ProjectTo<ProductCardDto>(_mapper.ConfigurationProvider).ToListAsync();
             var bestsellers = await products
                 .OrderByDescending(p => p.Price).Take(5)
@@ -123,8 +124,17 @@ namespace Ecom.ProductService.Application.Service.Web
 
                 // Tìm variant phù hợp trong list đã load về
                 selectedVariantId = await _unitOfWork.Repository<ProductVariant>()
-                    .GetAll(v => v.NameAscii == versionQuery).Include(x => x.Product).Where(x=>x.Product.NameAscii == slug).Select(x=> x.Id).FirstOrDefaultAsync();
-               
+                    .GetAll(v => v.NameAscii == versionQuery).Include(x => x.Product).Where(x => x.Product.NameAscii == slug).Select(x => x.Id).FirstOrDefaultAsync();
+
+            }
+            else {
+                 selectedVariantId = await _unitOfWork.Repository<Product>()
+                     .GetAll(x => x.NameAscii == slug)
+                     .Select(x => x.ProductVariants
+                         .Where(v => v.IsDefault)
+                         .Select(v => (int?)v.Id) // Ép kiểu về int? để tránh lỗi nếu danh sách rỗng
+                         .FirstOrDefault() ?? 0)
+                     .FirstOrDefaultAsync();
             }
 
             var dto = await _unitOfWork.Repository<Product>()
@@ -133,9 +143,9 @@ namespace Ecom.ProductService.Application.Service.Web
                 .FirstOrDefaultAsync();
 
             if (dto == null) return Result<ProductDetailDto>.Failure("Sản phẩm không tồn tại.");
-
+            dto.VariantId = selectedVariantId ?? 0;
             // 2. Xác định Variant mục tiêu dựa trên version (Xử lý trên RAM)
-          
+
             // 4. Lấy các thông tin phụ trợ tuần tự (Tránh lỗi DbContext)
             var attributes = await _unitOfWork.Repository<ProductAttributeValue>()
                 .GetAll(x => x.ProductId == dto.Id)
@@ -191,5 +201,7 @@ namespace Ecom.ProductService.Application.Service.Web
 
             return breadcrumbs;
         }
+
+        
     }
 }

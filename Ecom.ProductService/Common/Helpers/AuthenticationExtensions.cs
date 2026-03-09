@@ -53,6 +53,12 @@ namespace Ecom.ProductService.Common.Helpers
                         ValidateIssuerSigningKey = true,
                     };
                 });
+            services.AddGrpc(options =>
+            {
+                // check InternalGrpcApiKey gọi nội bộ
+                options.Interceptors.Add<GrpcApiKeyInterceptor>();
+            });
+
             services.AddSingleton<IAuthorizationHandler, InternalOrPermissionHandler>();
             services.AddAuthorization(options =>
             {

@@ -5,7 +5,7 @@ using Ecom.ProductService.Core.Models.Dtos.ProductWeb;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Ecom.ProductService.Controllers.Product
+namespace Ecom.ProductService.Controllers.Web
 {
     [Route("api/nganh-hang/san-pham")]
     [ApiController]
