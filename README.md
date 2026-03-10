@@ -232,7 +232,7 @@
  }
 ```
 ### Tích hợp Grpc
-- Bảo mật. []()
+### Bảo mật. [GrpcClientExtensions.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Common/Extension/GrpcClientExtensions.cs)
 ```csharp
            return builder.AddCallCredentials(async (context, metadata, serviceProvider) =>
            {
@@ -264,7 +264,8 @@
                            var rolesString = string.Join(",", currentUserService.Roles);
                            metadata.Add("X-User-Roles", rolesString);
                        }
-                       if(!string.IsNullOrEmpty(currentUserService.WorkplaceType)) metadata.Add("X-User-WorkplaceType",                                                                         currentUserService.WorkplaceType.ToString());
+                       if(!string.IsNullOrEmpty(currentUserService.WorkplaceType))
+                        metadata.Add("X-User-WorkplaceType", currentUserService.WorkplaceType.ToString());
                        if (currentUserService.Scopes.Count() > 0)
                        {
                            var scopesString = string.Join(",", currentUserService.Scopes);
@@ -279,10 +280,10 @@
                await Task.CompletedTask;
            });
 ```
-- Cấu hình. []()
- + Client.
+#### Cấu hình.
+#### Client.
    
- . Đăng ký. [DependencyInjectionWebApplication.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/DependencyInjection/DependencyInjectionWebApplication.cs)
+ - Đăng ký. [DependencyInjectionWebApplication.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/DependencyInjection/DependencyInjectionWebApplication.cs)
 ```csharp
    services.AddGrpcClient<ProductGrpc.ProductGrpcClient>(o => o.Address = new Uri(productUrl))
 .AddCommonCallCredentials(configuration);
@@ -291,7 +292,7 @@
    services.AddGrpcClient<PaymentGrpc.PaymentGrpcClient>(o => o.Address = new Uri(paymentUrl))
            .AddCommonCallCredentials(configuration);
 ```
-. Cấu hình poto file [payment.proto](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Protos/payment.proto)
+- Cấu hình poto file [payment.proto](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Protos/payment.proto)
 ```csharp
 syntax = "proto3";
 
@@ -309,7 +310,7 @@ service PaymentGrpc {
 // cấu hình khác
 
 ```
-. Code [OrderWebService.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Service/Web/OrderWebService.cs)
+- Code [OrderWebService.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Service/Web/OrderWebService.cs)
 ```csharp
                 var paymentGrpcRequest = new PaymentGrpcRequest();
                 paymentGrpcRequest.Amount = (double)order.TotalAmount;
@@ -322,8 +323,9 @@ service PaymentGrpc {
                 var paymentResult = await _paymentGrpcClient.ProcessPaymentAsync(paymentGrpcRequest);
                 
 ```
-+ Server
-. Bảo mật [GrpcApiKeyInterceptor.cs](https://github.com/nguyenthinh28902/ecom-payment/blob/main/Ecom.PaymentService.Api/Common/Requirement/GrpcApiKeyInterceptor.cs)
+#### Server
+  
+- Bảo mật [GrpcApiKeyInterceptor.cs](https://github.com/nguyenthinh28902/ecom-payment/blob/main/Ecom.PaymentService.Api/Common/Requirement/GrpcApiKeyInterceptor.cs)
 ```csharp
              public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
             TRequest request, ServerCallContext context, UnaryServerMethod<TRequest, TResponse> continuation)
@@ -339,7 +341,7 @@ service PaymentGrpc {
                         return await continuation(request, context);
                     }
 ```
-. Code [OrderPaymentGrpc.cs](https://github.com/nguyenthinh28902/ecom-payment/blob/main/Ecom.PaymentService.Api/Controller/Web/OrderPaymentGrpc.cs)
+- Code [OrderPaymentGrpc.cs](https://github.com/nguyenthinh28902/ecom-payment/blob/main/Ecom.PaymentService.Api/Controller/Web/OrderPaymentGrpc.cs)
 ```csharp
 public override async Task<PaymentGrpcResponse> ProcessPayment(PaymentGrpcRequest request, ServerCallContext context)
         {
