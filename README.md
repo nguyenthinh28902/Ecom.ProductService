@@ -1,6 +1,9 @@
 # Giao diện quản lý 
 ## Giới thiệu
 - Dịch vụ xử lý nghiệp vụ cho thương mại điện tử. phiên bản readme.md này được dùng chung cho các project service khác.
+### Thông tin chung của dự án
+[Thông tin chung dự án](https://github.com/nguyenthinh28902/mini-project-ecommerce).
+
 ## 🛠 Công nghệ
 - **Framework:** .NET Api Core, Grpc, RabbitMQ.
 - **Giao thức:** OpenID Connect (OIDC) & OAuth.
