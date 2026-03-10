@@ -110,3 +110,183 @@
 
             return Task.CompletedTask;
 ```
+## Kiến trúc dự án
+### Mô hình
+- Mô hình 3 layer.
+- [Unit of work và Repository](https://github.com/nguyenthinh28902/Ecom.ProductService/tree/main/Ecom.ProductService.Infrastructure/Repositories)
+Unit of work 
+```csharp
+        private readonly EcomProductDbContext dbContext;
+        private Dictionary<Type, object> _repositories = new Dictionary<Type, object>();
+        private IDbContextTransaction _transaction;
+        public UnitOfWork(EcomProductDbContext context)
+        {
+            dbContext = context;
+        }
+
+        public IRepository<T> Repository<T>() where T : class
+        {
+            IRepository<T> repository = null;
+            if (_repositories.ContainsKey(typeof(T)))
+            {
+                repository = _repositories[typeof(T)] as IRepository<T>;
+            }
+            else
+            {
+                repository = new Repository<T>(dbContext);
+                _repositories.Add(typeof(T), repository);
+            }
+
+            return (Repository<T>)repository;
+        }
+```
+Repository
+```csharp
+        private EcomProductDbContext _context;
+        public Repository(EcomProductDbContext _context)
+        {
+            this._context = _context;
+        }
+
+        /// <summary>
+        /// add 1 item
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public async Task AddAsync(T entity)
+        {
+            await _context.Set<T>().AddAsync(entity);
+        }
+```
+Code mấu
+```csharp
+ try
+ {
+     // 1. Lấy hoặc khởi tạo giỏ hàng cho khách hàng
+     var cart = await _unitOfWork.Repository<Cart>()
+         .GetAll(x => x.CustomerId == customerId)
+         .Include(x => x.CartItems)
+         .FirstOrDefaultAsync();
+
+     if (cart == null)
+     {
+         // Nếu chưa có giỏ hàng thì tạo mới
+         cart = new Cart
+         {
+             CustomerId = customerId,
+             CreatedAt = DateTime.UtcNow
+         };
+         await _unitOfWork.Repository<Cart>().AddAsync(cart);
+         await _unitOfWork.SaveChangesAsync();
+         if(cart.Id == 0) return Result<bool>.Failure("Có lỗi xảy ra khi thêm vào giỏ hàng");
+         // Lưu để có ID giỏ hàng trước khi thêm item (tùy thuộc vào thiết kế DB)
+         // Hoặc để EF Core tự xử lý quan hệ nếu CartId là FK
+     }
+
+     await _unitOfWork.BeginTransactionAsync();
+     // 2. Kiểm tra sản phẩm (với variant cụ thể) đã tồn tại trong giỏ chưa
+     var existingItem = cart.CartItems
+         .FirstOrDefault(x => x.ProductId == request.ProductId && x.VariantId == request.VariantId);
+     // Chỉ comment dòng quan trọng: Log trạng thái giỏ hàng để kiểm soát luồng thêm mới hoặc cập nhật
+     _logger.LogInformation("Check cart customer: {CustomerId} | Status: {CartStatus}",
+         customerId,
+         existingItem != null ? "Existing Cart" : "New Cart");
+     if (existingItem != null)
+     {
+         // Nếu đã có: Cập nhật thêm số lượng
+         existingItem.Quantity += request.Quantity;
+         existingItem.AddedAt = DateTime.UtcNow; // Cập nhật lại thời gian tương tác gần nhất
+
+         _unitOfWork.Repository<CartItem>().Update(existingItem);
+     }
+     else
+     {
+         // Nếu chưa có: Thêm mới item vào giỏ
+         var newItem = new CartItem
+         {
+             CartId = cart.Id,
+             ProductId = request.ProductId,
+             VariantId = request.VariantId,
+             Quantity = request.Quantity,
+             AddedAt = DateTime.UtcNow
+         };
+         await _unitOfWork.Repository<CartItem>().AddAsync(newItem);
+     }
+
+     // 3. Cập nhật thời gian thay đổi của giỏ hàng
+     cart.UpdatedAt = DateTime.UtcNow;
+     _unitOfWork.Repository<Cart>().Update(cart);
+
+     // 4. Xác nhận lưu toàn bộ thay đổi xuống Database
+     await _unitOfWork.CommitAsync();
+
+     _logger.LogInformation("Product {ProductId} added to cart successfully for customer {CustomerId}",
+         request.ProductId, customerId);
+
+     return Result<bool>.Success(true, "Đã thêm sản phẩm vào giỏ hàng thành công");
+ }
+ catch (Exception ex)
+ {
+     _logger.LogError(ex, "Error adding product to cart for customer {CustomerId}", customerId);
+     return Result<bool>.Failure("Có lỗi xảy ra khi thêm vào giỏ hàng");
+ }
+```
+### Tích hợp Grpc
+- Bảo mật. []()
+```csharp
+           return builder.AddCallCredentials(async (context, metadata, serviceProvider) =>
+           {
+               var currentCustomer = serviceProvider.GetRequiredService<ICurrentCustomerService>();
+               var currentUserService = serviceProvider.GetRequiredService<ICurrentUserService>();
+
+               // 1. Chỉ comment dòng quan trọng: Tự động đính kèm thông tin user nếu đã login
+               if (currentUserService.IsAuthenticated || currentCustomer.IsAuthenticated)
+               {
+
+                   if (!currentUserService.IsAuthenticated)
+                   {
+                       metadata.Add("X-User-Id", currentCustomer.Id.ToString());
+                       if (!string.IsNullOrEmpty(currentCustomer.Email))
+                           metadata.Add("X-User-Email", currentCustomer.Email);
+                       if (!string.IsNullOrEmpty(currentCustomer.PhoneNumber))
+                           metadata.Add("X-User-Phone", currentCustomer.PhoneNumber);
+                   }
+                   else
+                   {
+                       metadata.Add("X-User-Id", currentUserService.UserId.ToString());
+                       metadata.Add("X-User-WorkplaceId", currentUserService.WorkplaceId.ToString());
+                       if (!string.IsNullOrEmpty(currentUserService.Email))
+                       metadata.Add("X-User-Email", currentUserService.Email.ToString());
+                       if (!string.IsNullOrEmpty(currentUserService.WorkplaceType))
+                       metadata.Add("X-User-WorkplaceType", currentUserService.WorkplaceType.ToString());
+                       if (currentUserService.Roles.Count() > 0)
+                       {
+                           var rolesString = string.Join(",", currentUserService.Roles);
+                           metadata.Add("X-User-Roles", rolesString);
+                       }
+                       if(!string.IsNullOrEmpty(currentUserService.WorkplaceType)) metadata.Add("X-User-WorkplaceType",                                                                         currentUserService.WorkplaceType.ToString());
+                       if (currentUserService.Scopes.Count() > 0)
+                       {
+                           var scopesString = string.Join(",", currentUserService.Scopes);
+                           metadata.Add("X-User-Scopes", scopesString);
+                       }
+                   }
+               }
+               // 2. Chỉ comment dòng quan trọng: Đính kèm API Key nội bộ lấy từ file cấu hình
+               var internalKey = configuration["InternalGrpcApiKey"] ?? string.Empty;
+               metadata.Add("x-internal-key", internalKey);
+
+               await Task.CompletedTask;
+           });
+```
+- Cấu hình. []()
+Client. []()
+- Đăng ký
+```csharp
+   services.AddGrpcClient<ProductGrpc.ProductGrpcClient>(o => o.Address = new Uri(productUrl))
+.AddCommonCallCredentials(configuration);
+
+   // Đăng ký Payment Service Client
+   services.AddGrpcClient<PaymentGrpc.PaymentGrpcClient>(o => o.Address = new Uri(paymentUrl))
+           .AddCommonCallCredentials(configuration);
+```
