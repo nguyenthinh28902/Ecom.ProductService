@@ -114,7 +114,7 @@
 ### Mô hình
 - Mô hình 3 layer.
 - [Unit of work và Repository](https://github.com/nguyenthinh28902/Ecom.ProductService/tree/main/Ecom.ProductService.Infrastructure/Repositories)
-Unit of work 
++ Unit of work 
 ```csharp
         private readonly EcomProductDbContext dbContext;
         private Dictionary<Type, object> _repositories = new Dictionary<Type, object>();
@@ -140,7 +140,7 @@ Unit of work
             return (Repository<T>)repository;
         }
 ```
-Repository
++ Repository
 ```csharp
         private EcomProductDbContext _context;
         public Repository(EcomProductDbContext _context)
@@ -158,7 +158,7 @@ Repository
             await _context.Set<T>().AddAsync(entity);
         }
 ```
-Code mấu
++ Code mẫu
 ```csharp
  try
  {
@@ -280,8 +280,9 @@ Code mấu
            });
 ```
 - Cấu hình. []()
-Client. []()
-- Đăng ký
+ + Client.
+   
+ . Đăng ký. [DependencyInjectionWebApplication.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/DependencyInjection/DependencyInjectionWebApplication.cs)
 ```csharp
    services.AddGrpcClient<ProductGrpc.ProductGrpcClient>(o => o.Address = new Uri(productUrl))
 .AddCommonCallCredentials(configuration);
@@ -289,4 +290,77 @@ Client. []()
    // Đăng ký Payment Service Client
    services.AddGrpcClient<PaymentGrpc.PaymentGrpcClient>(o => o.Address = new Uri(paymentUrl))
            .AddCommonCallCredentials(configuration);
+```
+. Cấu hình poto file [payment.proto](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Protos/payment.proto)
+```csharp
+syntax = "proto3";
+
+// 1. Chỉ comment dòng quan trọng: Import thư viện thời gian chuẩn của Google
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Ecom.PaymentService.Grpc";
+package payment;
+
+service PaymentGrpc {
+  rpc ProcessPayment (PaymentGrpcRequest) returns (PaymentGrpcResponse);
+  rpc GetTransactionByOrderId (GetTransactionRequest) returns (TransactionGrpcResponse);
+  rpc GetTransactionByOrderIdManager (OrderTransactionGrpcRequest) returns (TransactionManagerGrpcResponse);
+}
+// cấu hình khác
+
+```
+. Code (OrderWebService.cs)[https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Service/Web/OrderWebService.cs]
+```csharp
+                var paymentGrpcRequest = new PaymentGrpcRequest();
+                paymentGrpcRequest.Amount = (double)order.TotalAmount;
+                paymentGrpcRequest.Currency = order.Currency;
+                paymentGrpcRequest.OrderId = order.Id;
+                paymentGrpcRequest.OrderCode = order.OrderCode;
+               
+                paymentGrpcRequest.Description = $"Thanh toán cho đơn hàng {order.OrderCode}";
+                paymentGrpcRequest.PaymentMethodCode = request.PaymentMethodCode;
+                var paymentResult = await _paymentGrpcClient.ProcessPaymentAsync(paymentGrpcRequest);
+                
+```
++ Server
+. Bảo mật [GrpcApiKeyInterceptor.cs](https://github.com/nguyenthinh28902/ecom-payment/blob/main/Ecom.PaymentService.Api/Common/Requirement/GrpcApiKeyInterceptor.cs)
+```csharp
+             public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
+            TRequest request, ServerCallContext context, UnaryServerMethod<TRequest, TResponse> continuation)
+                    {
+                        // Chỉ comment dòng quan trọng: Lấy Key từ Header "x-api-key"
+                        var headerKey = context.RequestHeaders.GetValue("x-internal-key");
+            
+                        if (headerKey != _apiKey)
+                        {
+                            throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid Internal API Key"));
+                        }
+            
+                        return await continuation(request, context);
+                    }
+```
+. Code [OrderPaymentGrpc.cs](https://github.com/nguyenthinh28902/ecom-payment/blob/main/Ecom.PaymentService.Api/Controller/Web/OrderPaymentGrpc.cs)
+```csharp
+public override async Task<PaymentGrpcResponse> ProcessPayment(PaymentGrpcRequest request, ServerCallContext context)
+        {
+            var dto = new OrderRequestDto
+            {
+                OrderId = request.OrderId,
+                OrderCode = request.OrderCode,
+                Amount = (decimal)request.Amount,
+                Currency = request.Currency,
+                PaymentMethodCode = request.PaymentMethodCode,
+                Description = request.Description
+            };
+
+            var result = await _paymentWebService.ProcessPaymentAsync(dto);
+
+            return new PaymentGrpcResponse
+            {
+                IsSuccess = result.IsSuccess,
+                Message = result.Noti,
+                ApprovalUrl = result.Data?.ApprovalUrl ?? "",
+                OrderCode = result.Data?.OrderCode ?? ""
+            };
+        }
 ```
