@@ -309,7 +309,7 @@ service PaymentGrpc {
 // cấu hình khác
 
 ```
-. Code (OrderWebService.cs)[https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Service/Web/OrderWebService.cs]
+. Code [OrderWebService.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Service/Web/OrderWebService.cs)
 ```csharp
                 var paymentGrpcRequest = new PaymentGrpcRequest();
                 paymentGrpcRequest.Amount = (double)order.TotalAmount;
@@ -363,4 +363,90 @@ public override async Task<PaymentGrpcResponse> ProcessPayment(PaymentGrpcReques
                 OrderCode = result.Data?.OrderCode ?? ""
             };
         }
+```
+### Tích hợp RabbitMQ
+- Cấu hình. [RabbitMQInfrastructure.cs](https://github.com/nguyenthinh28902/ecom-notification-service/blob/main/Ecom.Notification.Application/DependencyInjection/RabbitMQInfrastructure.cs)
+```csharp
+            services.AddMassTransit(x =>
+            {
+                // Đăng ký class xử lý logic khi có tin nhắn đến
+                x.AddConsumers(typeof(NotificationConsumer).Assembly);
+                x.UsingRabbitMq((context, cfg) =>
+                {
+                    cfg.Host(rabbitSettings.Host, (ushort)rabbitSettings.Port, "/", h =>
+                    {
+                        h.Username(rabbitSettings.UserName);
+                        h.Password(rabbitSettings.Password);
+                    });
+
+                    // Cấu hình Endpoint để lắng nghe Queue cụ thể
+                    cfg.ConfigureEndpoints(context);
+                });
+            });
+```
+- Code mẫu
+
+[NotificationConsumer.cs](https://github.com/nguyenthinh28902/ecom-notification-service/blob/main/Ecom.Notification.Application/Service/Consumer/NotificationConsumer.cs)
+```csharp
+public async Task Consume(ConsumeContext<NotificationRequestDto> context)
+        {
+            var eventData = context.Message;
+            try
+            {
+                await _notificationService.DispatchNotificationAsync(eventData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xử lý tin nhắn từ RabbitMQ cho {Email}", eventData.ReceiverEmail);
+                // Ném lỗi để MassTransit thực hiện Retry (thử lại) nếu đã cấu hình
+                throw;
+            }
+        }
+    }
+```
+[NotificationConsumerDefinition.cs](https://github.com/nguyenthinh28902/ecom-notification-service/blob/main/Ecom.Notification.Application/Service/ConsumerDefinition/NotificationConsumerDefinition.cs)
+```csharp
+ protected override void ConfigureConsumer(IReceiveEndpointConfigurator endpointConfigurator,
+            IConsumerConfigurator<NotificationConsumer> consumerConfigurator, IRegistrationContext context)
+        {
+            // Cấu hình Retry riêng cho ông này
+            endpointConfigurator.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+        }
+```
+[OrderWebService.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Service/Web/OrderWebService.cs)
+```csharp
+ 
+        private readonly IPublishEndpoint _publishEndpoint;
+        public OrderWebService(
+            IPublishEndpoint publishEndpoint)
+        {
+           
+            _publishEndpoint = publishEndpoint;
+        }
+```
+```csharp
+            var notificationEvent = new NotificationRequestDto
+            {
+                        ReceiverId = customerId,
+                        ReceiverRole = "CUSTOMER",
+                        ReceiverEmail = _currentCustomerService.Email,
+                        TypeCode = "ORDER_SUCCESS_CUSTOMER",
+                        Channel = "EMAIL",
+                        Message = $"Thông báo đơn hàng {order.OrderCode}",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { "customer_name", order.FullName },
+                            { "order_code", order.OrderCode },
+                            { "total_amount", $"{order.TotalAmount:N0} {order.Currency}" },
+                            
+                        },
+                                Items = order.OrderItems.Select(x => new Dictionary<string, string>
+                        {
+                            { "product_name", x.ProductName },
+                            { "quantity", x.Quantity.ToString() },
+                            { "sub_total", $"{(x.UnitPrice * x.Quantity):N0} {order.Currency}" }
+                        }).ToList()
+            };
+
+            await _publishEndpoint.Publish(notificationEvent);
 ```
