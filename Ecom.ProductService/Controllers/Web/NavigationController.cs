@@ -24,7 +24,6 @@ namespace Ecom.ProductService.Controllers.Web
         {           
             var result = await _navigationService.GetNavigationHomeAsync();
             return Ok(result);
-
         }
     }
 }

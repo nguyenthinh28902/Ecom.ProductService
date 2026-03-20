@@ -10,7 +10,7 @@ namespace Ecom.ProductService.Controllers.Web
     [Route("api/nganh-hang/san-pham")]
     [ApiController]
     // hệ thống gọi vẫn có token vì khi gọi qua gateway => gateway sẽ thêm token vào header, nhưng token này sẽ chỉ có quyền đọc web nên sẽ không gọi được các API dành riêng cho internal
-    [Authorize(PolicyNames.ProductReadWeb)]
+   // [Authorize(PolicyNames.ProductReadWeb)]
     public class ProductWebController : ControllerBase
     {
         private readonly ILogger<ProductWebController> _logger;

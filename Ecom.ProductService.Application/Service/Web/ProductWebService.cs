@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Ecom.ProductService.Application.Interface;
 using Ecom.ProductService.Application.Interface.Web;
 using Ecom.ProductService.Core.Abstractions.Persistence;
 using Ecom.ProductService.Core.Entities;
 using Ecom.ProductService.Core.Enums;
 using Ecom.ProductService.Core.Models;
+using Ecom.ProductService.Core.Models.Dtos.Navigation;
 using Ecom.ProductService.Core.Models.Dtos.ProductWeb;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -20,33 +22,69 @@ namespace Ecom.ProductService.Application.Service.Web
         private readonly ILogger<ProductWebService> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
         public ProductWebService(ILogger<ProductWebService> logger
             , IUnitOfWork unitOfWork
-            ,IMapper mapper)
+            ,IMapper mapper,
+            ICacheService cacheService)
         {
             _logger = logger;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<Result<HomeProductDisplayDto>> GetProductHome()
         {
-            _logger.LogInformation($"{nameof(GetProductHome)} start: ");
-            var products = _unitOfWork.Repository<Product>()
-                .GetAll(x=> x.Status == (byte)EntityStatus.Active && x.PublishDate <= DateTime.UtcNow.Date);
-            var NewArrivals = await products.Where(x => x.PublishDate.HasValue && x.PublishDate.Value > DateTime.Now.AddDays(-30)).ProjectTo<ProductCardDto>(_mapper.ConfigurationProvider).ToListAsync();
-            var bestsellers = await products
-                .OrderByDescending(p => p.Price).Take(5)
-                .ProjectTo<ProductCardDto>(_mapper.ConfigurationProvider).ToListAsync();
+            _logger.LogInformation($"{nameof(GetProductHome)} start");
+            var cacheKey = "GetProductHome";
 
-            var homeProduts = new HomeProductDisplayDto();
-            homeProduts.NewArrivals = NewArrivals;
-            homeProduts.BestDeals = bestsellers;
-            _logger.LogInformation($"{nameof(GetProductHome)} end: ");
-            return Result<HomeProductDisplayDto>.Success(homeProduts,"Danh sách sản phẩm trang chủ");
+            // 1. Thử lấy từ Cache (Fail-safe: Nếu Redis lỗi, hàm này trả về null nhờ try-catch bên trong)
+            var cachedData = await _cacheService.GetAsync<HomeProductDisplayDto>(cacheKey);
+            if (cachedData != null)
+            {
+                return Result<HomeProductDisplayDto>.Success(cachedData, "Danh sách sản phẩm trang chủ");
+            }
+
+            var today = DateTime.UtcNow.Date;
+            var thirtyDaysAgo = today.AddDays(-30);
+
+            // 2. Lấy tập dữ liệu gộp (Union) cả 2 điều kiện trong 1 lần gọi DB
+            // Sử dụng .AsNoTracking() để EF Core không tốn tài nguyên theo dõi object
+            var allRelevantProducts = await _unitOfWork.Repository<Product>()
+                .GetAll(x => x.Status == (byte)EntityStatus.Active && x.PublishDate <= today)
+                .Where(x => x.PublishDate > thirtyDaysAgo && x.IsDeleted != true) // Lấy các SP mới HOẶC có giá (để lọc BestDeals)
+                .OrderByDescending(x => x.PublishDate)
+                .Take(100) // Giới hạn lấy 100 bản ghi thô để phân loại trên RAM
+                .AsNoTracking()
+                .ProjectTo<ProductCardDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            // 3. Phân loại trên RAM (LINQ to Object - tốc độ tính bằng micro-giây)
+            var homeProducts = new HomeProductDisplayDto
+            {
+                // Lấy sản phẩm mới trong vòng 30 ngày qua
+                NewArrivals = allRelevantProducts
+                    .Where(x => x.PublishDate > thirtyDaysAgo)
+                    .Take(20)
+                    .ToList(),
+
+                // Lấy 5 sản phẩm giá cao nhất (giả định là BestDeals) từ tập data đã lấy
+                BestDeals = allRelevantProducts
+                    .OrderByDescending(p => p.Price)
+                    .Take(5)
+                    .ToList()
+            };
+
+            _logger.LogInformation($"{nameof(GetProductHome)} end");
+
+            // 4. Lưu Cache (Fire-and-forget hoặc await tùy nhu cầu, nên để 60p như cũ)
+            await _cacheService.SetAsync(cacheKey, homeProducts, TimeSpan.FromMinutes(60));
+
+            return Result<HomeProductDisplayDto>.Success(homeProducts, "Danh sách sản phẩm trang chủ");
         }
 
-       
+
 
         /// <summary>
         /// Get danh sách sản phẩm theo yêu cầu
@@ -118,28 +156,15 @@ namespace Ecom.ProductService.Application.Service.Web
             _logger.LogInformation($"{nameof(GetProductDetail)} start: {slug}");
 
             int? selectedVariantId = null;
-            if (!string.IsNullOrEmpty(version))
-            {
-                var versionQuery = version?.Trim().ToLower();
-
-                // Tìm variant phù hợp trong list đã load về
-                selectedVariantId = await _unitOfWork.Repository<ProductVariant>()
-                    .GetAll(v => v.NameAscii == versionQuery).Include(x => x.Product).Where(x => x.Product.NameAscii == slug).Select(x => x.Id).FirstOrDefaultAsync();
-
-            }
-            else {
-                 selectedVariantId = await _unitOfWork.Repository<Product>()
-                     .GetAll(x => x.NameAscii == slug)
-                     .Select(x => x.ProductVariants
-                         .Where(v => v.IsDefault)
-                         .Select(v => (int?)v.Id) // Ép kiểu về int? để tránh lỗi nếu danh sách rỗng
-                         .FirstOrDefault() ?? 0)
-                     .FirstOrDefaultAsync();
-            }
-
-            var dto = await _unitOfWork.Repository<Product>()
+            var isDefault = false;
+            if (string.IsNullOrEmpty(version)) { isDefault = true; version = string.Empty; }
+            var productQuery = _unitOfWork.Repository<Product>()
                 .GetAll(x => x.NameAscii == slug && x.IsDeleted != true)
-                .ProjectTo<ProductDetailDto>(_mapper.ConfigurationProvider, new { targetVariantId = selectedVariantId })
+                .Include(x => x.ProductVariants.Where(y => y.NameAscii.ToLower() == version.ToLower() || y.IsDefault == isDefault && y.IsActive == true));
+             
+
+            var dto = await productQuery
+                .ProjectTo<ProductDetailDto>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
 
             if (dto == null) return Result<ProductDetailDto>.Failure("Sản phẩm không tồn tại.");

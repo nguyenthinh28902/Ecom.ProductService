@@ -24,7 +24,8 @@ builder.Services.AddAuthenticationExtensions(builder.Configuration);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 // apication DI
-builder.Services.AddApplicationDI(builder.Configuration);
+var loggerFactory = LoggerFactory.Create(b => b.AddConfiguration(builder.Configuration));
+builder.Services.AddApplicationDI(builder.Configuration, loggerFactory);
 
 var app = builder.Build();
 

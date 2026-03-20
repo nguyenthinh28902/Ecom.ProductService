@@ -6,9 +6,10 @@ namespace Ecom.ProductService.Common.DependencyInjection
     {
         public static IServiceCollection AddApplicationDI(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILoggerFactory loggerFactory)
         {
-            services.AddDependencyInjectionApplication(configuration);
+            services.AddDependencyInjectionApplication(configuration, loggerFactory);
             return services;
         }
     }

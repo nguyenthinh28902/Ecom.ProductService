@@ -12,7 +12,6 @@ namespace Ecom.ProductService.Application.AutoMappings
     {
         public ApplicationProductWebProfile()
         {
-            int? targetVariantId = null;
             CreateMap<Product, ProductCardDto>()
             .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Brand.Name))
             .ForMember(dest => dest.CategoryNameAscii, opt => opt.MapFrom(src => 
@@ -31,8 +30,9 @@ namespace Ecom.ProductService.Application.AutoMappings
              .ForMember(d => d.IsStockAvailable, opt => opt.MapFrom(s => s.Status == (byte)EntityStatus.Active))
             // Map List đơn giản
             .ForMember(dest => dest.Images, opt => opt.MapFrom(src =>
-            src.ProductImages.Where(img => img.VariantId == targetVariantId && img.IsDeleted != true)))
-             .ForMember(d => d.Variants, opt => opt.MapFrom(s => s.ProductVariants.Where(x => x.IsActive == true && x.IsDeleted != true)))
+                    src.ProductImages.Where(img => img.IsDeleted != true &&
+                                                    src.ProductVariants.Any(v => v.Id == (img.VariantId ?? 0)))))
+            .ForMember(d => d.Variants, opt => opt.MapFrom(s => s.ProductVariants.Where(x => x.IsActive == true && x.IsDeleted != true)))
              // Map GroupProducts (Các sản phẩm cùng Group)
              .ForMember(d => d.GroupProducts, opt => opt.MapFrom(s => s.ProductGroup.Products))
              // Lấy danh sách Attribute phẳng (Sau đó Service sẽ Group lại sau)
@@ -43,5 +43,7 @@ namespace Ecom.ProductService.Application.AutoMappings
             CreateMap<Product, RelatedProductDto>()
                 .ForMember(d => d.IsCurrent, opt => opt.Ignore()); // Sẽ set ở Service
         }
+
+         
     }
 }
