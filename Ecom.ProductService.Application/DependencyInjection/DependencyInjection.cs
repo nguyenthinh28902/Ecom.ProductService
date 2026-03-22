@@ -17,11 +17,11 @@ namespace Ecom.ProductService.Application.DependencyInjection
         {
             services.AddDependencyInjectionInfrastructure(configuration);
             services.AddStackExchangeRedis(configuration);
-            services.AddAutoMapper(cfg =>
-            {
-                cfg.AddProfile<ApplicationNavigationProfile>();
-                cfg.AddProfile<ApplicationProductWebProfile>();
-            });
+                services.AddAutoMapper(cfg =>
+                {
+                    cfg.AddProfile<ApplicationNavigationProfile>();
+                    cfg.AddProfile<ApplicationProductWebProfile>();
+                });
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ICurrentCustomerService, CurrentCustomerService>();
             services.AddScoped<IBaseService, BaseService>();

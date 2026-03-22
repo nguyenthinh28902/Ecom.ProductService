@@ -8,7 +8,7 @@ namespace Ecom.ProductService.Controllers.Web
 {
     [Route("api/nganh-hang/danh-muc")]
     [ApiController]
-    [Authorize(PolicyNames.ProductReadWeb)]
+    //[Authorize(PolicyNames.ProductReadWeb)]
     public class NavigationController : ControllerBase
     {
         private readonly ILogger<NavigationController> _logger;

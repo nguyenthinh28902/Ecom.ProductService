@@ -4,6 +4,7 @@ using Ecom.ProductService.Core.Models.Auth;
 using Ecom.ProductService.Core.Models.Dtos.ProductWeb;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Ecom.ProductService.Controllers.Web
 {
@@ -45,9 +46,9 @@ namespace Ecom.ProductService.Controllers.Web
         [HttpPost("danh-sach-san-pham")]
         [ProducesResponseType(typeof(IEnumerable<Result<ProductListResponseDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-       
         public async Task<IActionResult> GetProducts([FromBody]ProductQueryParameters productQueryParameters)
         {
+            _logger.LogInformation(JsonSerializer.Serialize(productQueryParameters));
             var result = await _productWebService.GetProducts(productQueryParameters);
             return Ok(result);
         }
