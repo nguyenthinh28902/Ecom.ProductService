@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecom.ProductService.Core.Entities;
 
+[Index("Status", "PublishDate", Name = "IX_Product_Status_PublishDate_Price")]
 [Index("NameAscii", Name = "UQ__Products__448353502CE724BD", IsUnique = true)]
 [Index("Sku", Name = "UQ__Products__CA1ECF0D1D1AD9E0", IsUnique = true)]
 public partial class Product
