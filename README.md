@@ -30,7 +30,7 @@ Dịch vụ hỗ trợ xác thực đa nguồn (Multi-scheme), cho phép nhận 
 
 ### 1. Cấu hình xác thực đa lớp (Hybrid Auth)
 Tự động kiểm tra Token từ nguồn Web (WebScheme) và Hệ thống (Bearer).
-*File code:* [AuthenticationExtensions.cs](https://github.com/nguyenthinh28902/Ecom.ProductService/blob/main/Ecom.ProductService/Common/Helpers/AuthenticationExtensions.cs).
+*File code:* [AuthenticationExtensions.cs](https://github.com/nguyenthinh28902/Ecom.ProductService/blob/main/Ecom.ProductService/Common/Helpers/AuthenticationExtensions.cs#L20).
 
 ```csharp
 services.AddAuthentication(options => {
@@ -102,7 +102,7 @@ try {
 
 ### 1. Bảo mật phía Client
 Tự động đính kèm User Context và Internal API Key vào Metadata của mỗi request.
-*File code:* [GrpcClientExtensions.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Common/Extension/GrpcClientExtensions.cs)
+*File code:* [GrpcClientExtensions.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Common/Extension/GrpcClientExtensions.cs#L16)
 
 ```csharp
 return builder.AddCallCredentials((context, metadata, serviceProvider) => {
@@ -118,7 +118,7 @@ return builder.AddCallCredentials((context, metadata, serviceProvider) => {
 ```
 
 ### 2. Cấu hình & Đăng ký Client
-*File code:* [DependencyInjectionWebApplication.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/DependencyInjection/DependencyInjectionWebApplication.cs)
+*File code:* [DependencyInjectionWebApplication.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/DependencyInjection/DependencyInjectionWebApplication.cs#L26)
 
 ```csharp
 // Đăng ký các service client kèm cấu hình bảo mật chung
@@ -131,7 +131,7 @@ services.AddGrpcClient<PaymentGrpc.PaymentGrpcClient>(o => o.Address = new Uri(p
 
 ### 3. Xử lý phía Server (Interceptors)
 Kiểm tra API Key nội bộ để đảm bảo request đến từ các service hợp lệ.
-*File code:* [GrpcApiKeyInterceptor.cs](https://github.com/nguyenthinh28902/ecom-payment/blob/main/Ecom.PaymentService.Api/Common/Requirement/GrpcApiKeyInterceptor.cs)
+*File code:* [GrpcApiKeyInterceptor.cs](https://github.com/nguyenthinh28902/ecom-payment/blob/main/Ecom.PaymentService.Api/Common/Requirement/GrpcApiKeyInterceptor.cs#L19)
 
 ```csharp
 public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(...) {
@@ -148,7 +148,7 @@ public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(..
 
 ### 1. Cấu hình hạ tầng
 Thiết lập kết nối Host và đăng ký các Consumer xử lý tin nhắn.
-*File code:* [RabbitMQInfrastructure.cs](https://github.com/nguyenthinh28902/ecom-notification-service/blob/main/Ecom.Notification.Application/DependencyInjection/RabbitMQInfrastructure.cs)
+*File code:* [RabbitMQInfrastructure.cs](https://github.com/nguyenthinh28902/ecom-notification-service/blob/main/Ecom.Notification.Application/DependencyInjection/RabbitMQInfrastructure.cs#L18)
 
 ```csharp
 services.AddMassTransit(x => {
@@ -165,7 +165,7 @@ services.AddMassTransit(x => {
 
 ### 2. Triển khai Consumer & Retry Policy
 Đảm bảo tin nhắn được xử lý tin cậy với cơ chế thử lại tự động.
-*File code:* [NotificationConsumer.cs](https://github.com/nguyenthinh28902/ecom-notification-service/blob/main/Ecom.Notification.Application/Service/Consumer/NotificationConsumer.cs)
+*File code:* [NotificationConsumerDefinition.cs](https://github.com/nguyenthinh28902/ecom-notification-service/blob/main/Ecom.Notification.Application/Service/ConsumerDefinition/NotificationConsumerDefinition.cs#L33)
 
 ```csharp
 // Cấu hình thử lại: 3 lần, mỗi lần cách nhau 5 giây trước khi vào Queue lỗi
