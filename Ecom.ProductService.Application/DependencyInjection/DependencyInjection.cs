@@ -1,8 +1,5 @@
-﻿using Ecom.ProductService.Application.AutoMappings;
-using Ecom.ProductService.Application.Interface.Auth;
-using Ecom.ProductService.Application.Interface.CMS;
+﻿using Ecom.ProductService.Application.Interface.Auth;
 using Ecom.ProductService.Application.Service.Auth;
-using Ecom.ProductService.Application.Service.CMS;
 using Ecom.ProductService.Infrastructure.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,11 +14,7 @@ namespace Ecom.ProductService.Application.DependencyInjection
         {
             services.AddDependencyInjectionInfrastructure(configuration);
             services.AddStackExchangeRedis(configuration);
-                services.AddAutoMapper(cfg =>
-                {
-                    cfg.AddProfile<ApplicationNavigationProfile>();
-                    cfg.AddProfile<ApplicationProductWebProfile>();
-                });
+            
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ICurrentCustomerService, CurrentCustomerService>();
             services.AddScoped<IBaseService, BaseService>();

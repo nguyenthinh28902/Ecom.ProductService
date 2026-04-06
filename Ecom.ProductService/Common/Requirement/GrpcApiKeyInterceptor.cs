@@ -15,7 +15,7 @@ namespace Ecom.ProductService.Common.Requirement
         public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
             TRequest request, ServerCallContext context, UnaryServerMethod<TRequest, TResponse> continuation)
         {
-            // Chỉ comment dòng quan trọng: Lấy Key từ Header "x-api-key"
+            //  Lấy Key từ Header "x-api-key"
             var headerKey = context.RequestHeaders.GetValue("x-internal-key");
 
             if (headerKey != _apiKey)

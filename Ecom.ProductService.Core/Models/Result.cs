@@ -16,7 +16,7 @@ namespace Ecom.ProductService.Core.Models
             Data = data;
             Noti = error;
         }
-        public static Result<T> Success(T data, string mess)
+        public static Result<T> Success(T data, string mess = "")
        => new(true, data, mess);
 
         public static Result<T> Failure(string error)

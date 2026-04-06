@@ -8,8 +8,13 @@ namespace Ecom.ProductService.Infrastructure.DbContexts;
 
 public partial class EcomProductDbContext : DbContext
 {
-    public EcomProductDbContext(DbContextOptions<EcomProductDbContext> options)
-        : base(options)
+    // Constructor cho Master (Port 5000)
+    public EcomProductDbContext(DbContextOptions<EcomProductDbContext> options) : base(options)
+    {
+    }
+
+    // Constructor dùng cho các lớp con kế thừa (như ReadOnlyDbContext)
+    protected EcomProductDbContext(DbContextOptions options) : base(options)
     {
     }
 

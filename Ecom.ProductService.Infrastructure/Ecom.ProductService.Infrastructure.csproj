@@ -22,4 +22,8 @@
     <ProjectReference Include="..\Ecom.ProductService.Core\Ecom.ProductService.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Repositories\Write\" />
+  </ItemGroup>
+
 </Project>

@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Ecom.ProductService.Application.Interface;
 using Ecom.ProductService.Application.Interface.Web;
 using Ecom.ProductService.Core.Abstractions.Persistence;
+using Ecom.ProductService.Core.Abstractions.Persistence.ReadOnly;
 using Ecom.ProductService.Core.Entities;
 using Ecom.ProductService.Core.Enums;
 using Ecom.ProductService.Core.Models;
@@ -17,32 +18,36 @@ namespace Ecom.ProductService.Application.Service.Web
     public class NavigationService : INavigationService
     {
         private readonly ILogger<NavigationService> _logger;
+        private readonly IBrandReadOnlyRepository _brandRepo;
+        private readonly ICategoryReadOnlyRepository _categoryRepo;
         private readonly ICacheService _cacheService;
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        public NavigationService(ILogger<NavigationService> logger, ICacheService cacheService, IUnitOfWork unitOfWork
-            ,IMapper mapper) { 
-            _logger = logger;
+
+        public NavigationService(
+            IBrandReadOnlyRepository brandRepo,
+            ICategoryReadOnlyRepository categoryRepo,
+            ICacheService cacheService,
+            ILogger<NavigationService> logger) 
+        {
+            _brandRepo = brandRepo;
+            _categoryRepo = categoryRepo;
             _cacheService = cacheService;
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
+            _logger = logger;
         }
+
         public async Task<Result<ProductFilterMenuViewModel>> GetNavigationHomeAsync()
         {
             var cacheKey = "NavigationHome";
             var cachedData = await _cacheService.GetAsync<ProductFilterMenuViewModel>(cacheKey);
-            if (cachedData != null) return Result<ProductFilterMenuViewModel>.Success(cachedData, "Dữ liệu danh mục");
-            var brands = _unitOfWork.Repository<Brand>().GetAll(x => x.IsDeleted != true && x.Status == (byte)EntityStatus.Active)
-                .ProjectTo<BrandDto>(_mapper.ConfigurationProvider).ToList();
-            var categories = _unitOfWork.Repository<Category>().GetAll(x => x.IsDeleted != true && x.Status == (byte)EntityStatus.Active)
-                .ProjectTo<CategoryDto>(_mapper.ConfigurationProvider).ToList();
+            if (cachedData != null) return Result<ProductFilterMenuViewModel>.Success(cachedData, "Lấy thông tin thành công.");
 
-            var result = new ProductFilterMenuViewModel();
-            result.Brands = brands;
-            result.Categories = categories;
+            //  Gọi Repo chuyên biệt cho luồng Đọc
+            var brands = await _brandRepo.GetNavigationBrandsAsync();
+            var categories = await _categoryRepo.GetNavigationCategoriesAsync();
+
+            var result = new ProductFilterMenuViewModel { Brands = brands, Categories = categories };
             await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(60));
-            return Result<ProductFilterMenuViewModel>.Success(result, "Dữ liệu danh mục");
 
+            return Result<ProductFilterMenuViewModel>.Success(result, "Lấy thông tin thành công.");
         }
     }
 }

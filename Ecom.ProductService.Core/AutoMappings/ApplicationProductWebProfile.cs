@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Ecom.ProductService.Application.AutoMappings
+namespace Ecom.ProductService.Core.AutoMappings
 {
     public class ApplicationProductWebProfile : Profile
     {
