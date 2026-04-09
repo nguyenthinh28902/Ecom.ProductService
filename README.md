@@ -22,7 +22,7 @@ Dịch vụ xử lý nghiệp vụ trung tâm cho hệ sinh thái thương mại
 ## 🛠 Công nghệ cốt lõi
 * **Core Framework:** .NET 10 API, gRPC.
 * **Message Broker:** RabbitMQ (MassTransit).
-* **Security:** IdentityServer4 (OIDC & OAuth 2.0).
+* **Security:** Duende IdentityServer (OIDC & OAuth 2.0).
 * **Caching:**  Cache.
 
 ## 🔐 Cơ chế Bảo mật & Xác thực
