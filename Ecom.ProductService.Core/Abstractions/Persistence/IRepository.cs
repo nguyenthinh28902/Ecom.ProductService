@@ -12,18 +12,18 @@ namespace Ecom.ProductService.Core.Abstractions.Persistence
         void RemoveRange(IEnumerable<T> entities);
         void Update(T entity);
         void UpdateRange(IEnumerable<T> entities);
-        public Task<int> CountAsync(Expression<Func<T, bool>> predicate = null);
-        Task<T> FindAsync(object Id);
-        Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
-        Task<T> FirstOrDefaultAsNoTrackingAsync(Expression<Func<T, bool>> predicate);
+        public Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
+        Task<T?> FindAsync(object Id);
+        Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+        Task<T?> FirstOrDefaultAsNoTrackingAsync(Expression<Func<T, bool>> predicate);
         Task<IEnumerable<T>> ToListAsync();
         Task<IEnumerable<T>> ToListAsync(Expression<Func<T, bool>> predicate);
 
         public IQueryable<T> ListIncludes(params Expression<Func<T, object>>[] includes);
         public IQueryable<T> GetAll(
-           Expression<Func<T, bool>> predicate = null,
-           Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
-           Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null, bool disableTracking = true, bool ignoreQueryFilters = false);
+           Expression<Func<T, bool>>? predicate = null,
+           Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+           Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, bool disableTracking = true, bool ignoreQueryFilters = false);
         public void Detached(T entity);
     }
 }

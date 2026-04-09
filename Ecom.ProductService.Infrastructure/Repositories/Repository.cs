@@ -75,10 +75,10 @@ namespace Ecom.ProductService.Infrastructure.Repositories
         /// </summary>
         /// <param name="Id"></param>
         /// <returns></returns>
-        public async Task<T> FindAsync(object Id)
+        public async Task<T?> FindAsync(object Id)
         {
             var entity = await _context.Set<T>().FindAsync(Id);
-            if (entity == null) return null;
+          
             return entity;
         }
 
@@ -87,10 +87,10 @@ namespace Ecom.ProductService.Infrastructure.Repositories
         /// </summary>
         /// <param name="predicate">lambda</param>
         /// <returns></returns>
-        public async Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+        public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
         {
             var entity = await _context.Set<T>().FirstOrDefaultAsync(predicate);
-            if (entity == null) return null;
+         
             return entity;
         }
 
@@ -99,10 +99,10 @@ namespace Ecom.ProductService.Infrastructure.Repositories
         /// </summary>
         /// <param name="predicate">lambda</param>
         /// <returns></returns>
-        public async Task<T> FirstOrDefaultAsNoTrackingAsync(Expression<Func<T, bool>> predicate)
+        public async Task<T?> FirstOrDefaultAsNoTrackingAsync(Expression<Func<T, bool>> predicate)
         {
             var entity = await _context.Set<T>().AsNoTracking().FirstOrDefaultAsync(predicate);
-            if (entity == null) return null;
+            
             return entity;
         }
         /// <summary>
@@ -119,9 +119,17 @@ namespace Ecom.ProductService.Infrastructure.Repositories
         /// </summary>
         /// <param name="predicate"></param>
         /// <returns></returns>
-        public async Task<int> CountAsync(Expression<Func<T, bool>> predicate = null)
+        public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
         {
-            return await _context.Set<T>().AsNoTracking().Where(predicate).CountAsync();
+            var query = _context.Set<T>().AsNoTracking();
+
+            // Chỉ thực hiện Where nếu predicate có giá trị
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            return await query.CountAsync();
         }
         /// <summary>
         /// get danh sách có điều kiện lambda
@@ -153,9 +161,9 @@ namespace Ecom.ProductService.Infrastructure.Repositories
         /// <param name="ignoreQueryFilters"></param>
         /// <returns></returns>
         public IQueryable<T> GetAll(
-            Expression<Func<T, bool>> predicate = null,
-            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null, bool disableTracking = true, bool ignoreQueryFilters = false)
+            Expression<Func<T, bool>>? predicate = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, bool disableTracking = true, bool ignoreQueryFilters = false)
         {
             var query = _context.Set<T>().AsQueryable();
 
