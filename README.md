@@ -22,7 +22,7 @@ Dịch vụ xử lý nghiệp vụ trung tâm cho hệ sinh thái thương mại
 ## 🛠 Công nghệ cốt lõi
 * **Core Framework:** .NET 10 API, gRPC.
 * **Message Broker:** RabbitMQ (MassTransit).
-* **Security:** IdentityServer4 (OIDC & OAuth 2.0).
+* **Security:** Duende IdentityServer (OIDC & OAuth 2.0).
 * **Caching:**  Cache.
 
 ## 🔐 Cơ chế Bảo mật & Xác thực
@@ -97,6 +97,19 @@ try {
     return Result<bool>.Failure("Error processing data");
 }
 ```
+### 🔄 Unit of Work & Repository (Replication Updated)
+*File code:* [Repositories Folder](https://github.com/nguyenthinh28902/Ecom.ProductService/tree/main/Ecom.ProductService.Infrastructure/Repositories).
+
+Kiến trúc Repository và Unit of Work đã được nâng cấp để hỗ trợ cơ chế **Read/Write Splitting**, giúp ứng dụng tự động phân luồng truy vấn dựa trên mục đích sử dụng.
+
+#### 🔑 Các điểm cập nhật chính:
+* **Hỗ trợ Đa ngữ cảnh (Multi-Context Support):** `UnitOfWork` hiện tại có khả năng khởi tạo với cả `EcomProductDbContext` (Master) và `ReadOnlyDbContext` (Replica) tùy thuộc vào cấu hình DI.
+* **Repository Isolation:** Mỗi Repository được gắn chặt với Context mà nó được khởi tạo, đảm bảo dữ liệu luôn được truy vấn từ đúng Instance (Master hoặc Slave).
+* **Tối ưu Query:** Mọi truy vấn thông qua `ReadOnlyDbContext` đều được ép cấu hình `AsNoTracking()` mặc định, giúp giảm tải CPU và bộ nhớ cho dàn Replica.
+#### 🛠️ Cơ chế hoạt động:
+* **Write Flow:** Sử dụng `IUnitOfWork` mặc định kết nối tới cổng **5000**. Mọi thao tác `Add`, `Update`, `Remove` sẽ được đẩy thẳng về SQL Server Master.
+* **Read Flow:** Sử dụng `IReadOnlyUnitOfWork` kết nối tới cổng **5001**. HAProxy sẽ nhận yêu cầu và điều phối đến các node Slave đang rảnh để lấy dữ liệu.
+* **Safety Lock:** `ReadOnlyDbContext` đã được ghi đè (override) để ném ra ngoại lệ `InvalidOperationException` nếu phát hiện có hành vi Ghi dữ liệu vào luồng Đọc, giúp bảo vệ tính toàn vẹn của hệ thống Replication.
 
 ## 🛰 Tích hợp gRPC (High-Performance Communication)
 
