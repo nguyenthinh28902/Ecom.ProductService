@@ -8,7 +8,7 @@ namespace Ecom.ProductService.Infrastructure.Repositories
 {
     public class ReadOnlyUnitOfWork : UnitOfWork, IReadOnlyUnitOfWork
     {
-        public ReadOnlyUnitOfWork(EcomProductDbContext context, IServiceProvider serviceProvider)
+        public ReadOnlyUnitOfWork(ReadOnlyDbContext context, IServiceProvider serviceProvider)
             : base(context, serviceProvider)
         {
         }

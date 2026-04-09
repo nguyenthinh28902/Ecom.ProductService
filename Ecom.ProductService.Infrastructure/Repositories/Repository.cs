@@ -8,10 +8,11 @@ namespace Ecom.ProductService.Infrastructure.Repositories
 {
     public class Repository<T> : IRepository<T> where T : class
     {
-        private EcomProductDbContext _context;
-        public Repository(EcomProductDbContext _context)
+        private readonly DbContext _context;
+
+        public Repository(DbContext context)
         {
-            this._context = _context;
+            _context = context;
         }
 
         /// <summary>

@@ -25,7 +25,7 @@ namespace Ecom.ProductService.Infrastructure.DependencyInjection
 
 
             //add kiến trúc repo and UoW
-            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            //services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IReadOnlyUnitOfWork, ReadOnlyUnitOfWork>(sp => {
                 var context = sp.GetRequiredService<ReadOnlyDbContext>();
