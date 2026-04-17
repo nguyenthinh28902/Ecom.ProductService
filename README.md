@@ -17,7 +17,8 @@ Dịch vụ xử lý nghiệp vụ trung tâm cho hệ sinh thái thương mại
   * [Cấu hình tại Gateway CMS](https://github.com/nguyenthinh28902/ecommerce-api-gateway-cms)
 * **Resource Server:** Cấu hình JWT Bearer và phân quyền dựa trên Policy (Policy-based Authorization).
   * [Cấu hình tại Product Service](https://github.com/nguyenthinh28902/Ecom.ProductService)
-
+* **Identity CMS Core:** Định nghĩa các thực thể cốt lõi (User, Department, Permission) và logic xử lý quyền hạn tập trung.
+  * [Cấu hình tại Identity CMS Core](https://github.com/nguyenthinh28902/ecommerce-identity-cms/blob/main/README.md)
 ---
 ## 🛠 Công nghệ cốt lõi
 * **Core Framework:** .NET 10 API, gRPC.
