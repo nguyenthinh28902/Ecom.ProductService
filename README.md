@@ -17,7 +17,8 @@ Dịch vụ xử lý nghiệp vụ trung tâm cho hệ sinh thái thương mại
   * [Cấu hình tại Gateway CMS](https://github.com/nguyenthinh28902/ecommerce-api-gateway-cms)
 * **Resource Server:** Cấu hình JWT Bearer và phân quyền dựa trên Policy (Policy-based Authorization).
   * [Cấu hình tại Product Service](https://github.com/nguyenthinh28902/Ecom.ProductService)
-
+* **Identity CMS Core:** Định nghĩa các thực thể cốt lõi (User, Department, Permission) và logic xử lý quyền hạn tập trung.
+  * [Cấu hình tại Identity CMS Core](https://github.com/nguyenthinh28902/ecommerce-identity-cms/blob/main/README.md)
 ---
 ## 🛠 Công nghệ cốt lõi
 * **Core Framework:** .NET 10 API, gRPC.
@@ -189,3 +190,72 @@ public async Task Consume(ConsumeContext<NotificationRequestDto> context) {
     await _notificationService.DispatchNotificationAsync(context.Message);
 }
 ```
+---
+## ⚙️ Database Replication
+### 🗄️ 1. Database Replication Implementation (Triển khai bản sao cơ sở dữ liệu)
+
+Giải pháp sử dụng kỹ thuật **Single Model, Multiple Contexts** dựa trên cơ chế kế thừa để thực thi Pattern **Read/Write Splitting**. Phương pháp này giúp tách biệt luồng truy xuất dữ liệu mà không cần định nghĩa lại các thực thể (Entities), đảm bảo tính nhất quán và tối ưu hóa bảo trì.
+
+* **Source Code:** [Infrastructure.DbContexts](https://github.com/nguyenthinh28902/Ecom.ProductService/tree/main/Ecom.ProductService.Infrastructure/DbContexts)
+
+#### ** 1.1. Đăng ký Service & Connection Strings**
+Cấu hình hai chuỗi kết nối riêng biệt cho Master (Write) và Replica (Read) ngay tại tầng Infrastructure để Dependency Injection (DI) điều phối chính xác:
+
+```json
+"ConnectionStrings": {
+  "EcommerceProduct": "Server=localhost,5000;Database=ecom_product_db;User ID=demo;Password=Thinh@zzxx9;TrustServerCertificate=True;",
+  "EcommerceProductReplication": "Server=localhost,5001;Database=ecom_product_db;Integrated Security=True;TrustServerCertificate=True;"
+}
+```
+```csharp
+// Thiết lập Connection Strings từ cấu hình hệ thống
+ConnectionStrings.ProductMasterDb = configuration.GetConnectionString("EcommerceProduct") ?? string.Empty;
+ConnectionStrings.ProductReplicationDb = configuration.GetConnectionString("EcommerceProductReplication") ?? string.Empty;
+
+// Đăng ký Master Context cho các tác vụ thay đổi dữ liệu (Write)
+services.AddDbContext<EcomProductDbContext>(options =>
+    options.UseSqlServer(ConnectionStrings.ProductMasterDb));
+
+// Đăng ký Read-Only Context cho các tác vụ truy vấn (Read)
+services.AddDbContext<ReadOnlyDbContext>(options =>
+    options.UseSqlServer(ConnectionStrings.ProductReplicationDb));
+```
+
+#### ** 1.2. Cơ chế Kế thừa Context (Inheritance Strategy)**
+`ReadOnlyDbContext` kế thừa trực tiếp từ `EcomProductDbContext`. Phương pháp này cho phép tận dụng toàn bộ cấu hình Fluent API và DbSet hiện có, chỉ thay đổi hành vi truy xuất thông qua Connection String của Replica.
+
+```csharp
+public class ReadOnlyDbContext : EcomProductDbContext
+{
+    // Sử dụng generic DbContextOptions để DI định tuyến chính xác tới Replica DB
+    public ReadOnlyDbContext(DbContextOptions<ReadOnlyDbContext> options)
+        : base(options)
+    {
+        // Tắt tính năng Change Tracking để tối ưu hiệu năng cho Read-Only
+        this.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+    }
+}
+```
+
+> **Ưu điểm:** Việc thiết lập `NoTracking` ngay trong constructor của `ReadOnlyDbContext` giúp tăng tốc độ truy vấn đáng kể và giảm bộ nhớ tiêu thụ cho các tác vụ lấy dữ liệu hàng loạt bằng cách loại bỏ chi phí quản lý trạng thái thực thể.
+
+### 📊 2. Operational Traffic Analysis (Báo cáo vận hành luồng dữ liệu)
+
+Để xác thực cơ chế điều hướng, các truy vấn **Read-Only** được cấu hình mặc định đổ dồn vào cụm **EcommerceProductReplication** (`Port: 5001`). Việc tách biệt này giúp bảo vệ Master node, đảm bảo hiệu suất tối ưu cho các tác vụ ghi dữ liệu.
+
+* **Cấu hình DB Proxy:** Chi tiết thiết lập Load Balancing và điều phối lưu lượng xem tại [Database Proxy Configuration](https://github.com/nguyenthinh28902/mini-project-ecommerce/blob/main/README.md#%EF%B8%8F-431-load-balancing-with-haproxy).
+
+#### **Báo cáo trên UI HAProxy (/stats)**
+Dưới đây là số liệu thời gian thực từ trình quản lý HAProxy, phân phối tải giữa Master và Replica:
+
+![HAProxy Statistics Report](https://github.com/nguyenthinh28902/mini-project-ecommerce/blob/main/images/haproxy-statistics-report.png)
+
+#### **Phân tích chỉ số vận hành (Metrics Breakdown):**
+
+| Thành phần | Chỉ số (Metrics) | Trạng thái | Phân tích luồng |
+| :--- | :--- | :--- | :--- |
+| **Master Node** | Out: 0 Bytes | **Standby** | Không ghi nhận truy vấn đọc, sẵn sàng cho các tác vụ ghi (Write). |
+| **Replica Node** | Out: 104,909 Bytes | **Active** | Xử lý toàn bộ luồng dữ liệu trả về từ Web CMS. |
+| **Session Rate** | Cur: 1 / Max: 2 | **Healthy** | Phân phối phiên làm việc ổn định, không xảy ra nghẽn (Queue: 0). |
+
+**Kết luận:** Dựa trên các chỉ số **Bytes Out** (lượng dữ liệu xuất) và **Total Sessions** tại cụm `replica_back`, hệ thống xác nhận đã nhận diện chính xác cấu hình `ReadOnlyDbContext` và điều hướng toàn bộ lưu lượng đọc ra khỏi Master node một cách hiệu quả theo đúng thiết kế.
