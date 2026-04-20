@@ -12,5 +12,7 @@ namespace Ecom.ProductService.Application.Interface.Auth
         int WorkplaceId { get; }
         List<string> Scopes { get; }
         List<string> Roles { get; }
+        string? IpAddress { get; }  // Thêm dòng này
+        string? UserAgent { get; }  // Thêm dòng này
     }
 }

@@ -39,5 +39,12 @@ namespace Ecom.ProductService.Application.Service.Auth
                .Split(',', StringSplitOptions.RemoveEmptyEntries)
                .Select(r => r.Trim())
                .ToList() ?? new List<string>();
+        // Lấy IP Address
+        public string? IpAddress =>
+            HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? // Lấy IP thật nếu qua Gateway/Proxy
+            HttpContext?.Connection.RemoteIpAddress?.ToString(); // Lấy IP trực tiếp nếu không qua Proxy
+
+        // Lấy User Agent (Thông tin trình duyệt/thiết bị)
+        public string? UserAgent => HttpContext?.Request.Headers["User-Agent"].ToString();
     }
 }

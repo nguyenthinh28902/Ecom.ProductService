@@ -14,6 +14,7 @@ namespace Ecom.ProductService.Infrastructure.DependencyInjection
             {
                 cfg.AddProfile<ApplicationNavigationProfile>();
                 cfg.AddProfile<ApplicationProductWebProfile>();
+                cfg.AddProfile<BrandProfile>();
             });
             return services; 
         }

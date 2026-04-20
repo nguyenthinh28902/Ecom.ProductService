@@ -49,6 +49,14 @@ namespace Ecom.ProductService.Common.Extensions
                     statusCode = forbEx.StatusCode;
                     message = forbEx.Message;
                     break;
+                case BadRequestException badRequestEx:
+                    statusCode = badRequestEx.StatusCode;
+                    message = badRequestEx.Message;
+                    break;
+                case ConflictException conflictEx:
+                    statusCode = conflictEx.StatusCode;
+                    message = conflictEx.Message;
+                    break;
             }
 
             context.Response.StatusCode = statusCode;

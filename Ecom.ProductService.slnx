@@ -3,6 +3,9 @@
     <File Path=".gitignore" />
     <File Path="README.md" />
   </Folder>
+  <Folder Name="/UnitTest/">
+    <Project Path="Ecom.ProductService.Tests/Ecom.ProductService.Tests.csproj" Id="9a618ab1-9929-474e-94e0-772aac85728b" />
+  </Folder>
   <Project Path="Ecom.ProductService.Application/Ecom.ProductService.Application.csproj" />
   <Project Path="Ecom.ProductService.Core/Ecom.ProductService.Core.csproj" />
   <Project Path="Ecom.ProductService.Infrastructure/Ecom.ProductService.Infrastructure.csproj" />

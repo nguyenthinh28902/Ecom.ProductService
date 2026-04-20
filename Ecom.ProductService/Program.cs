@@ -3,10 +3,20 @@ using Ecom.ProductService.Common.DependencyInjection;
 using Ecom.ProductService.Common.Extensions;
 using Ecom.ProductService.Common.Helpers;
 using Ecom.ProductService.Controllers.Web;
+using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 Console.OutputEncoding = System.Text.Encoding.UTF8;
+//logging configuration
+// 1. Đọc cấu hình từ appsettings.json
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
+
+// 2. Ép hệ thống dùng Serilog thay cho trình log mặc định
+builder.Host.UseSerilog();
+
 // Add services to the container.
 builder.Services.AddControllers();
 //configure appsettings
@@ -24,8 +34,7 @@ builder.Services.AddAuthenticationExtensions(builder.Configuration);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 // apication DI
-var loggerFactory = LoggerFactory.Create(b => b.AddConfiguration(builder.Configuration));
-builder.Services.AddApplicationDI(builder.Configuration, loggerFactory);
+builder.Services.AddApplicationDI(builder.Configuration);
 
 var app = builder.Build();
 
@@ -44,6 +53,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapGrpcService<OrderProductService>(); 
+app.MapGrpcService<OrderProductService>();
+
+app.UseSerilogRequestLogging();
 
 app.Run();

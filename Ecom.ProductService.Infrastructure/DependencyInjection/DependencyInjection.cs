@@ -1,9 +1,11 @@
 ﻿using Ecom.ProductService.Core.Abstractions.Persistence;
 using Ecom.ProductService.Core.Abstractions.Persistence.ReadOnly;
+using Ecom.ProductService.Core.Abstractions.Persistence.Write;
 using Ecom.ProductService.Core.Models.Db;
 using Ecom.ProductService.Infrastructure.DbContexts;
 using Ecom.ProductService.Infrastructure.Repositories;
 using Ecom.ProductService.Infrastructure.Repositories.ReadOnly;
+using Ecom.ProductService.Infrastructure.Repositories.Write;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +44,11 @@ namespace Ecom.ProductService.Infrastructure.DependencyInjection
             services.AddScoped<IProductSummaryReadOnlyRepository, ProductSummaryReadOnlyRepository>();
             services.AddScoped<IProductReadOnlyRepository, ProductReadOnlyRepository>();
             services.AddScoped<IOrderReadOnlyRepository, OrderReadOnlyRepository>();
+
+            //write repo
+            services.AddScoped<IBrandRepository, BrandRepository>();
+
+
             return services;
         }
     }

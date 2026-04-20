@@ -10,7 +10,12 @@ obj/
 *.user
 *.suo
 *.cache
+Logs/
 *.log
+
+# Loại bỏ các file backup tạm thời của Visual Studio
+*.tmp
+*.bak
 
 # Rider / VS Code
 .idea/

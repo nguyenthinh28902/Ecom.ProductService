@@ -11,7 +11,11 @@ namespace Ecom.ProductService.Application.DependencyInjection
     {
             public static IServiceCollection AddCmsApplication(this IServiceCollection services)
             {
+
+            services.AddScoped<ISystemLogManagerService, SystemLogManagerService>();
             services.AddScoped<IProductSummaryService, ProductSummaryService>();
+            services.AddScoped<IBrandManagerService, BrandManagerService>();
+
             return services;
         }
     }
