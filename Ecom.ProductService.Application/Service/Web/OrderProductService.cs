@@ -2,6 +2,7 @@
 using Ecom.ProductService.Core.Abstractions.Persistence.ReadOnly;
 using Ecom.ProductService.Core.Entities;
 using Ecom.ProductService.Core.Enums;
+using Ecom.ProductService.Infrastructure.Repositories;
 using Ecom.Shared.Grpc;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,12 @@ namespace Ecom.ProductService.Application.Service.Web
     public class OrderProductService : ProductGrpc.ProductGrpcBase
     {
         private readonly IOrderReadOnlyRepository _orderRepo;
-        public OrderProductService(IOrderReadOnlyRepository orderRepo) => _orderRepo = orderRepo;
+        private readonly IReadOnlyUnitOfWork _unitOfWork;
+        public OrderProductService(IOrderReadOnlyRepository orderRepo, IReadOnlyUnitOfWork unitOfWork)
+        {
+            _orderRepo = orderRepo;
+            _unitOfWork = unitOfWork;
+        }
 
         public override async Task<ProductResponse> GetProductDisplayInfos(ProductRequest request, ServerCallContext context)
         {
@@ -23,20 +29,37 @@ namespace Ecom.ProductService.Application.Service.Web
             var productIds = request.Items.Select(x => x.Id).Distinct().ToList();
             var variantIds = request.Items.Select(x => x.VariantId).Distinct().ToList();
 
-            var products = await _orderRepo.GetProductsWithVariantsAsync(productIds, variantIds);
-
-            var productInfos = products.SelectMany(v => v.ProductVariants.Select(p => new ProductInfo
+           
+            var productVariants = await _unitOfWork.Repository<ProductVariant>()
+                .Entities
+                .AsNoTracking() // Thêm cái này vì ný chỉ đọc, giúp tăng tốc độ truy vấn
+                .Include(x => x.Product)
+                .Where(v => variantIds.Contains(v.Id) && v.IsDeleted != true && v.Product.IsDeleted != true)
+                 // Sửa x thành v ở đây ný ơi
+                .ToListAsync();
+            if (productVariants == null || !productVariants.Any())
             {
-                Id = v.Id,
-                VariantId = p.Id,
-                Name = v.VersionName,
-                VariantName = p.ColorName ?? "",
-                Price = (double)p.Price,
-                ImageUrl = v.MainImage ?? "",
-                IsAvailable = v.Status == (byte)EntityStatus.Active && (p.IsActive ?? false)
-            }));
-
-            response.Products.AddRange(productInfos);
+                // Ném lỗi NotFound của gRPC để service khác biết đường mà xử lý
+                throw new RpcException(new Status(StatusCode.NotFound, "Không tìm thấy sản phẩm nào hợp lệ để thanh toán ơi!"));
+            }
+            foreach (var item in productVariants)
+            {
+                var productInfo = new ProductInfo();
+                productInfo = new ProductInfo
+                {
+                    Id = item.ProductId,                     // ID của Product cha
+                    VariantId = item.Id,              // ID của Variant con
+                    Name = item.Product.Name + " - " + item.ColorName,                 // Dùng v.Name (thường là tên sản phẩm chính)
+                    VariantName = item.ColorName,   // Đảm bảo dùng đúng field chứa tên version (như "Xanh/Size L")
+                    Price = (double)item.Price,
+                    ImageUrl = item.Product.MainImage ?? "", // Ưu tiên ảnh của Variant, không có mới lấy ảnh đại diện Product
+                    IsAvailable = item.Product.Status == (byte)EntityStatus.Active, // Giả định 1 là Active
+                    CurrencyUnit = "VNĐ",
+                    Sku = item.Sku ?? ""
+                };
+                response.Products.Add(productInfo);
+            }
+            
             return response;
         }
 
@@ -47,7 +70,11 @@ namespace Ecom.ProductService.Application.Service.Web
             var variantIds = request.Items.Select(x => x.VariantId).Distinct().ToList();
 
             var products = await _orderRepo.GetProductsForCheckoutAsync(productIds, variantIds);
-
+            if (products == null || !products.Any())
+            {
+                // Ném lỗi NotFound của gRPC để service khác biết đường mà xử lý
+                throw new RpcException(new Status(StatusCode.NotFound, "Không tìm thấy sản phẩm nào hợp lệ để thanh toán ơi!"));
+            }
             foreach (var item in request.Items)
             {
                 var product = products.FirstOrDefault(p => p.Id == item.Id);

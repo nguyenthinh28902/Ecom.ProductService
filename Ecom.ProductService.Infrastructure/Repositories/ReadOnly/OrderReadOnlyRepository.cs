@@ -16,18 +16,19 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
         public async Task<List<Product>> GetProductsWithVariantsAsync(List<int> productIds, List<int> variantIds)
         {
             return await _readOnlyUnitOfWork.Repository<Product>()
-                .GetAll(x => productIds.Contains(x.Id))
-                .Include(x => x.ProductVariants.Where(v => variantIds.Contains(v.Id)))
-                .AsNoTracking()
-                .ToListAsync();
+                        .Entities
+                        .AsNoTracking() // Thêm cái này vì ný chỉ đọc, giúp tăng tốc độ truy vấn
+                        .Where(x => productIds.Contains(x.Id) && x.IsDeleted != true)
+                        .Include(x => x.ProductVariants.Where(v => variantIds.Contains(v.Id) && v.IsDeleted != true)) // Sửa x thành v ở đây ný ơi
+                        .ToListAsync();
         }
 
         public async Task<List<Product>> GetProductsForCheckoutAsync(List<int> productIds, List<int> variantIds)
         {
-            return await _readOnlyUnitOfWork.Repository<Product>()
-                .GetAll(x => productIds.Contains(x.Id))
-                .Include(x => x.ProductVariants.Where(v => variantIds.Contains(v.Id)))
-                .Include(x => x.ProductImages)
+            return await _readOnlyUnitOfWork.Repository<Product>().Entities
+                .Where(x => productIds.Contains(x.Id) && x.IsDeleted != true)
+                .Include(x => x.ProductVariants.Where(v => variantIds.Contains(v.Id) && v.IsDeleted != true))
+                .Include(x => x.ProductImages.Where(img => img.IsDeleted != true))
                 .AsNoTracking()
                 .ToListAsync();
         }

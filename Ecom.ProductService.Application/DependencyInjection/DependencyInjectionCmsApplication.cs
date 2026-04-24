@@ -15,6 +15,7 @@ namespace Ecom.ProductService.Application.DependencyInjection
             services.AddScoped<ISystemLogManagerService, SystemLogManagerService>();
             services.AddScoped<IProductSummaryService, ProductSummaryService>();
             services.AddScoped<IBrandManagerService, BrandManagerService>();
+            services.AddScoped<IProductManagerService, ProductManagerService>();
 
             return services;
         }

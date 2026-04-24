@@ -27,7 +27,8 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
         {
             var today = DateTime.UtcNow.Date;
             return await _readOnlyUnitOfWork.Repository<Product>()
-                .GetAll(x => x.Status == (byte)EntityStatus.Active && x.PublishDate <= today && x.PublishDate > thirtyDaysAgo && x.IsDeleted != true)
+				.Entities
+				.Where(x => x.Status == (byte)EntityStatus.Active && x.PublishDate <= today && x.PublishDate > thirtyDaysAgo && x.IsDeleted != true)
                 .OrderByDescending(x => x.PublishDate)
                 .Take(100)
                 .AsNoTracking()
@@ -38,7 +39,8 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
         public async Task<(List<ProductCardDto> Items, int Total)> GetPagedProductsAsync(ProductQueryParameters query)
         {
             var queryable = _readOnlyUnitOfWork.Repository<Product>()
-                .GetAll(x => x.Status == (byte)EntityStatus.Active && x.PublishDate <= DateTime.UtcNow && x.IsDeleted != true);
+				.Entities
+				.Where(x => x.Status == (byte)EntityStatus.Active && x.PublishDate <= DateTime.UtcNow && x.IsDeleted != true);
 
             // Filter logic (Category, Brand, Search) giữ nguyên nhưng thực thi tại Repo
             if (!string.IsNullOrEmpty(query.CategorySlug))
@@ -67,7 +69,8 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
         public async Task<ProductDetailDto?> GetProductDetailWithVariantsAsync(string slug, string version, bool isDefault)
         {
             return await _readOnlyUnitOfWork.Repository<Product>()
-                .GetAll(x => x.NameAscii == slug && x.IsDeleted != true)
+				.Entities
+				.Where(x => x.NameAscii == slug && x.IsDeleted != true)
                 .Include(x => x.ProductVariants.Where(y => y.NameAscii.ToLower() == version.ToLower() || (y.IsDefault == isDefault && y.IsActive == true)))
                 .ProjectTo<ProductDetailDto>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
@@ -76,7 +79,8 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
         public async Task<List<AttributeGroupDto>> GetProductAttributesAsync(int productId)
         {
             var rawAttributes = await _readOnlyUnitOfWork.Repository<ProductAttributeValue>()
-                .GetAll(x => x.ProductId == productId)
+				.Entities
+				.Where(x => x.ProductId == productId)
                 .Select(a => new { Group = a.Attribute.Group.Name, Key = a.Attribute.Name, Val = a.Value })
                 .ToListAsync();
 
@@ -91,7 +95,8 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
         public async Task<Category?> GetMainCategoryByProductIdAsync(int productId)
         {
             return await _readOnlyUnitOfWork.Repository<ProductCategoryMapping>()
-                .GetAll(m => m.ProductId == productId && m.IsMain == true)
+				.Entities
+				.Where(m => m.ProductId == productId && m.IsMain == true)
                 .Select(m => m.Category)
                 .FirstOrDefaultAsync();
         }
@@ -102,7 +107,8 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
 
             // Lấy Category chính
             var currentCat = await _readOnlyUnitOfWork.Repository<ProductCategoryMapping>()
-                .GetAll(m => m.ProductId == productId && m.IsMain == true)
+				.Entities
+				.Where(m => m.ProductId == productId && m.IsMain == true)
                 .Select(m => m.Category)
                 .FirstOrDefaultAsync();
 
@@ -117,7 +123,8 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
                 if (!currentCat.ParentId.HasValue || currentCat.ParentId == 0) break;
 
                 currentCat = await _readOnlyUnitOfWork.Repository<Category>()
-                    .GetAll(c => c.Id == currentCat.ParentId)
+				.Entities
+				.Where(c => c.Id == currentCat.ParentId)
                     .FirstOrDefaultAsync();
             }
 

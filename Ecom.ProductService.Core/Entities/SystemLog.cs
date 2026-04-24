@@ -41,4 +41,11 @@ public partial class SystemLog
 
     [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
+
+    /// <summary>
+    /// Tên hàm service thực hiện ghi log
+    /// </summary>
+    [StringLength(255)]
+    [Unicode(false)]
+    public string? FunctionName { get; set; }
 }

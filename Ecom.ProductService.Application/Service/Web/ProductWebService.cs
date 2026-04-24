@@ -6,6 +6,7 @@ using Ecom.ProductService.Core.Abstractions.Persistence;
 using Ecom.ProductService.Core.Abstractions.Persistence.ReadOnly;
 using Ecom.ProductService.Core.Entities;
 using Ecom.ProductService.Core.Enums;
+using Ecom.ProductService.Core.Exceptions;
 using Ecom.ProductService.Core.Models;
 using Ecom.ProductService.Core.Models.Dtos.Navigation;
 using Ecom.ProductService.Core.Models.Dtos.ProductWeb;
@@ -86,7 +87,7 @@ namespace Ecom.ProductService.Application.Service.Web
             // 1. Lấy thông tin cơ bản và Variant qua Repo
             var dto = await _productRepo.GetProductDetailWithVariantsAsync(slug, version, isDefault);
 
-            if (dto == null) return Result<ProductDetailDto>.Failure("Sản phẩm không tồn tại.");
+            if (dto == null) throw new NotFoundException($"Sản phẩm {slug} không tồn tại.");
 
             // 2. Lấy Specifications (Đã được Repo Group sẵn)
             dto.Specifications = await _productRepo.GetProductAttributesAsync(dto.Id);

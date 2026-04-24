@@ -1,6 +1,7 @@
 ﻿using Ecom.ProductService.Core.Abstractions.Persistence;
 using Ecom.ProductService.Core.Abstractions.Persistence.Write;
 using Ecom.ProductService.Core.Entities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -23,7 +24,7 @@ namespace Ecom.ProductService.Infrastructure.Repositories.Write
         /// <returns>True nếu NameAscii đã tồn tại, ngược lại False</returns>
         public async Task<bool> CheckNameAscii(string NameAscii)
         {
-            var existingBrand = await _unitOfWork.Repository<Brand>().FirstOrDefaultAsNoTrackingAsync(b => b.NameAscii == NameAscii);
+            var existingBrand = await _unitOfWork.Repository<Brand>().EntitiesNoTracking.FirstOrDefaultAsync(b => b.NameAscii == NameAscii);
             return existingBrand != null;
         }
     }

@@ -29,6 +29,7 @@ namespace Ecom.ProductService.Application.DependencyInjection
             }
             services.AddScoped<ICurrentCustomerService, CurrentCustomerService>();
             services.AddScoped<IBaseService, BaseService>();
+            services.AddRabbitMQExtension(configuration);
             services.AddCmsApplication();
             services.AddWebApplication();
             return services;

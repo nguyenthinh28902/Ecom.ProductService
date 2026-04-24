@@ -27,7 +27,8 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
         {
             //  Thực hiện ProjectTo ngay tại đây để SQL chỉ Select các cột cần thiết
             return await _readOnlyUnitOfWork.Repository<Brand>()
-                .GetAll(x => x.IsDeleted != true && x.Status == (byte)EntityStatus.Active)
+                .Entities
+				.Where(x => x.IsDeleted != true && x.Status == (byte)EntityStatus.Active)
                 .AsNoTracking()
                 .ProjectTo<BrandDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();

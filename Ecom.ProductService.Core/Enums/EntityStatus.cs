@@ -9,4 +9,11 @@ namespace Ecom.ProductService.Core.Enums
         Active = 1,
         Inactive = 0,
     }
+
+    public class SystemAction
+    {
+        public const string Create = "Create";
+        public const string Update = "Update";
+        public const string Delete = "Delete";
+    }
 }

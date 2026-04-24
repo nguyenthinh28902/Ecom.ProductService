@@ -34,18 +34,16 @@ namespace Ecom.ProductService.Common.Extensions
         {
             context.Response.ContentType = "application/json";
 
-            // Mặc định là lỗi 500
             var statusCode = (int)HttpStatusCode.InternalServerError;
             var message = "Đã có lỗi hệ thống xảy ra. Vui lòng thử lại sau.";
 
-            // Phân loại Exception
             switch (exception)
             {
                 case UnauthorizedException authEx:
                     statusCode = authEx.StatusCode;
                     message = authEx.Message;
                     break;
-                case ForbiddenException forbEx: // Lỗi 403 (Mới thêm)
+                case ForbiddenException forbEx:
                     statusCode = forbEx.StatusCode;
                     message = forbEx.Message;
                     break;
@@ -57,6 +55,10 @@ namespace Ecom.ProductService.Common.Extensions
                     statusCode = conflictEx.StatusCode;
                     message = conflictEx.Message;
                     break;
+                case NotFoundException notFoundException:
+                    statusCode = notFoundException.StatusCode;
+                    message = notFoundException.Message;
+                    break;
             }
 
             context.Response.StatusCode = statusCode;
@@ -66,7 +68,6 @@ namespace Ecom.ProductService.Common.Extensions
                 isSuccess = false,
                 statusCode = statusCode,
                 error = message,
-                // Chỉ hiển thị chi tiết lỗi (StackTrace) khi ở môi trường Development
                 detail = _env.IsDevelopment() ? exception.ToString() : null
             };
 

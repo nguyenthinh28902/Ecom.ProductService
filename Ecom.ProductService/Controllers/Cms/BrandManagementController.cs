@@ -21,7 +21,7 @@ namespace Ecom.ProductService.Controllers.Cms
             _brandManagerService = brandManagerService;
         }
 
-        [HttpPost("create")]
+        [HttpPost("them-moi")]
         //[Authorize(PolicyNames.ProductWrite)]
         public async Task<IActionResult> CreateBrand([FromBody] CreateBrandDto request)
         {

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Ecom.ProductService.Core.Entities;
 using Microsoft.EntityFrameworkCore;
-using Attribute = Ecom.ProductService.Core.Entities.Attribute;
 
 namespace Ecom.ProductService.Infrastructure.DbContexts;
 
@@ -18,7 +17,7 @@ public partial class EcomProductDbContext : DbContext
     {
     }
 
-    public virtual DbSet<Attribute> Attributes { get; set; }
+    public virtual DbSet<Core.Entities.Attribute> Attributes { get; set; }
 
     public virtual DbSet<AttributeGroup> AttributeGroups { get; set; }
 
@@ -44,7 +43,7 @@ public partial class EcomProductDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Attribute>(entity =>
+        modelBuilder.Entity<Core.Entities.Attribute>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Attribut__3214EC07AD3D0B44");
 
@@ -187,6 +186,11 @@ public partial class EcomProductDbContext : DbContext
             entity.HasOne(d => d.Product).WithMany(p => p.ProductVariants)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Variant_Product");
+        });
+
+        modelBuilder.Entity<SystemLog>(entity =>
+        {
+            entity.Property(e => e.FunctionName).HasComment("Tên hàm service thực hiện ghi log");
         });
 
         OnModelCreatingPartial(modelBuilder);

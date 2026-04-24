@@ -27,9 +27,10 @@ namespace Ecom.ProductService.Infrastructure.Repositories.ReadOnly
         {
             //  Tối ưu hóa truy vấn cho hệ thống Replication
             return await _readOnlyUnitOfWork.Repository<Category>()
-                .GetAll(x => x.IsDeleted != true && x.Status == (byte)EntityStatus.Active)
-                .AsNoTracking()
-                .ProjectTo<CategoryDto>(_mapper.ConfigurationProvider)
+                .Entities
+				.Where(x => x.IsDeleted != true && x.Status == (byte)EntityStatus.Active)
+				.AsNoTracking()
+				.ProjectTo<CategoryDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
         }
     }
