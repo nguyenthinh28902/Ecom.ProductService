@@ -163,11 +163,11 @@ namespace Ecom.ProductService.Application.Service.CMS
         /// <exception cref="NotFoundException"></exception>
         public async Task<Result<bool>> ProductVariantDelete(int variantId)
         {
-            // 0. Kiểm tra quyền (Sử dụng BaseService ný đã có)
+            
             _baseService.EnsurePermission(ProductPermission.ProductUpdate);
             _logger.LogInformation("Bắt đầu xóa biến thể sản phẩm Id: {VariantId}", variantId);
 
-            // 1. Tìm variant bằng Entities để tối ưu (Fail-Fast)
+          
             var variant = await _unitOfWork.Repository<ProductVariant>()
             .Entities
             .Include(v => v.Product.ProductImages.Where(img => img.VariantId == variantId && img.IsDeleted != true))
@@ -178,10 +178,10 @@ namespace Ecom.ProductService.Application.Service.CMS
                 throw new NotFoundException($"Biến thể sản phẩm không tồn tại ný ơi!");
             }
 
-            // Lúc này variant.Product.ProductImages đã có sẵn dữ liệu, không cần gọi thêm repo nữa
+            
             var variantImages = variant.Product.ProductImages;
 
-            // 2. Chạy Transaction
+            
             await _unitOfWork.BeginTransactionAsync();
             try
             {

@@ -17,18 +17,9 @@ namespace Ecom.ProductService.Application.DependencyInjection
         {
             services.AddDependencyInjectionInfrastructure(configuration);
             services.AddStackExchangeRedis(configuration);
-            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Development)
-            {
-                // Khi chạy Local, dùng bản Dev này để không cần Token
-                services.AddScoped<ICurrentUserService, CurrentUserServiceDev>();
-            }
-            else
-            {
-                // Khi lên Staging/Production, dùng bản thật đọc Header từ Gateway
-                services.AddScoped<ICurrentUserService, CurrentUserService>();
-            }
-            services.AddScoped<ICurrentCustomerService, CurrentCustomerService>();
-            services.AddScoped<IBaseService, BaseService>();
+            
+            
+            
             services.AddRabbitMQExtension(configuration);
             services.AddCmsApplication();
             services.AddWebApplication();
