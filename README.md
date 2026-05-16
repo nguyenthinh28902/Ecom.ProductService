@@ -259,3 +259,92 @@ Dưới đây là số liệu thời gian thực từ trình quản lý HAProxy,
 | **Session Rate** | Cur: 1 / Max: 2 | **Healthy** | Phân phối phiên làm việc ổn định, không xảy ra nghẽn (Queue: 0). |
 
 **Kết luận:** Dựa trên các chỉ số **Bytes Out** (lượng dữ liệu xuất) và **Total Sessions** tại cụm `replica_back`, hệ thống xác nhận đã nhận diện chính xác cấu hình `ReadOnlyDbContext` và điều hướng toàn bộ lưu lượng đọc ra khỏi Master node một cách hiệu quả theo đúng thiết kế.
+
+## 🔍 Observability & Centralized Logging (Giám sát & Ghi log tập trung)
+Hệ thống áp dụng giải pháp **Centralized Logging** kết hợp với **Distributed Tracing** để gom toàn bộ dữ liệu nhật ký vận hành từ Gateway và các dịch vụ về một nơi lưu trữ tập trung, phục vụ công tác giám sát và điều tra lỗi.
+
+### 🐳 1. Cấu hình Hạ tầng Seq với Docker
+Dịch vụ **Seq** dùng Docker để build Container độc lập để thu thập toàn bộ log hệ thống.
+
+* **Cấu hình chi tiết:** Xem thiết lập môi trường, Volume lưu trữ và giới hạn tài nguyên Container tại [Docker Compose Configuration](https://github.com/nguyenthinh28902/mini-project-ecommerce/blob/main/Seq/docker-compose.yml).
+
+### 📄 2. Cấu hình Ứng dụng (appsettings.json)
+Kích hoạt thuộc tính `FromLogContext` trong cấu hình Serilog để hệ thống tự động đính kèm dữ liệu ngữ cảnh (như Correlation ID) vào cấu trúc log JSON trước khi bắn về Seq trung tâm.
+
+```json
+"Serilog": {
+    "WriteTo": [
+      { "Name": "Console", "Args": { "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}" } },
+      { "Name": "File", "Args": { "path": "Logs/product-service-.log", "rollingInterval": "Day", "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact" } },
+      { "Name": "Seq", "Args": { "serverUrl": "http://localhost:5341", "apiKey": "" } }
+    ],
+    "Enrich": [ "FromLogContext", "WithMachineName", "WithThreadId" ],
+    "Properties": {
+      "Application": "ProductService",
+      "Environment": "Development"
+    }
+  }
+```
+
+### 🚀 3. Khởi tạo Ghi log trong Program.cs
+Tận dụng interface gốc `ILogger` của .NET để thực hiện ghi log trong các lớp nghiệp vụ, giúp mã nguồn đảm bảo tính trừu tượng (Abstraction) và độc lập với thư viện bên thứ ba.
+
+```C#
+// 1. Đọc cấu hình từ appsettings.json
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
+// 2. Thay thế ILogger mặc định của .NET
+builder.Host.UseSerilog();
+```
+
+### 🔗 4. Cơ chế Đồng bộ Request Tracing (Correlation ID)
+
+Mã định danh duy nhất (Correlation ID) được xâu chuỗi xuyên suốt từ luồng HTTP (Gateway) xuống đến các cuộc gọi liên dịch vụ bằng gRPC.
+
+#### **4.1. Nhận mã tại Middleware (HTTP Server)**
+Xây dựng Middleware để bắt mã định danh từ các yêu cầu HTTP đổ về, sau đó đẩy trực tiếp vào ngữ cảnh log `LogContext` của Serilog cho toàn bộ vòng đời request hiện tại. 
+*File code:* [CorrelationIdMiddleware.cs](https://github.com/nguyenthinh28902/Ecom.ProductService/blob/main/Ecom.ProductService/Common/Middleware/CorrelationIdMiddleware.cs).
+```C#
+// Kiểm tra xem header có mã chưa, chưa có thì tạo mới
+if (!context.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
+{
+    // Nếu không có trong Header, thử tìm trong Metadata (Trường hợp gRPC đặc thù)
+    // Một số hệ thống dùng lowercase 'x-correlation-id' cho gRPC
+    if (!context.Request.Headers.TryGetValue("x-correlation-id", out correlationId))
+    {
+        // Cuối cùng mới tạo mới nếu cả 2 đều không có
+        correlationId = Guid.NewGuid().ToString();
+    }
+}
+// Đẩy vào LogContext để log của Gateway cũng có mã này
+using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId.ToString()))
+{
+    // Quan trọng: Gắn lại vào Header để YARP tí nữa nó "bốc" đi theo
+    context.Request.Headers["X-Correlation-ID"] = correlationId;
+    // Trả về cho Client biết luôn (để ný debug trên trình duyệt)
+    context.Response.Headers["X-Correlation-ID"] = correlationId;
+    await _next(context);
+}
+```
+
+#### **4.2. Truyền mã đi tại gRPC Client**
+Khi một dịch vụ thực hiện cuộc gọi gRPC sang dịch vụ khác, mã `CorrelationId` đang nằm trong Request hiện tại sẽ được bốc ra từ `HttpContext` và đính kèm vào Metadata để tiếp tục truyền xuống hạ tầng phía dưới.
+
+*File code:* [GrpcClientExtensions.cs](https://github.com/nguyenthinh28902/ecom-order-service/blob/main/Ecom.OrderService.Application/Common/Extension/GrpcClientExtensions.cs#L26)
+
+```C#
+  // Lấy HttpContextAccessor để truy cập Header của request hiện tại
+  var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+  var httpContext = httpContextAccessor.HttpContext;
+  // 1. Chỉ comment dòng quan trọng: Truyền Correlation ID xuống Service qua gRPC
+  if (httpContext != null)
+   {
+     var correlationId = httpContext.Request.Headers["X-Correlation-ID"].ToString();
+     if (!string.IsNullOrEmpty(correlationId))
+      {
+      metadata.Add("x-correlation-id", correlationId);
+      }
+   }
+```
+
