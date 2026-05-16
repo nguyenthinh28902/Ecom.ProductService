@@ -34,6 +34,7 @@ namespace Ecom.ProductService.Application.Service.Web
 
         public async Task<Result<HomeProductDisplayDto>> GetProductHome()
         {
+            _logger.LogInformation($"{nameof(GetProductHome)} start");
             var cacheKey = "GetProductHome";
             var cachedData = await _cacheService.GetAsync<HomeProductDisplayDto>(cacheKey);
             if (cachedData != null) return Result<HomeProductDisplayDto>.Success(cachedData);
@@ -48,6 +49,7 @@ namespace Ecom.ProductService.Application.Service.Web
             };
 
             await _cacheService.SetAsync(cacheKey, homeProducts, TimeSpan.FromMinutes(60));
+            _logger.LogInformation($"{nameof(GetProductHome)} end");
             return Result<HomeProductDisplayDto>.Success(homeProducts);
         }
 
@@ -60,6 +62,7 @@ namespace Ecom.ProductService.Application.Service.Web
         /// <returns></returns>
         public async Task<Result<ProductListResponseDto>> GetProducts(ProductQueryParameters query)
         {
+            _logger.LogInformation($"{nameof(GetProducts)} start");
             var (items, total) = await _productRepo.GetPagedProductsAsync(query);
 
             var response = new ProductListResponseDto
@@ -69,6 +72,7 @@ namespace Ecom.ProductService.Application.Service.Web
                 CurrentPage = query.Page,
                 TotalPages = (int)Math.Ceiling(total / (double)query.PageSize)
             };
+            _logger.LogInformation($"{nameof(GetProducts)} end");
             return Result<ProductListResponseDto>.Success(response);
         }
 
