@@ -15,27 +15,30 @@ namespace Ecom.ProductService.Application.Service.Web
     {
         private readonly IOrderReadOnlyRepository _orderRepo;
         private readonly IReadOnlyUnitOfWork _unitOfWork;
-        public OrderProductService(IOrderReadOnlyRepository orderRepo, IReadOnlyUnitOfWork unitOfWork)
+        private readonly ILogger<OrderProductService> _logger;
+        public OrderProductService(IOrderReadOnlyRepository orderRepo, IReadOnlyUnitOfWork unitOfWork, ILogger<OrderProductService> logger)
         {
             _orderRepo = orderRepo;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         public override async Task<ProductResponse> GetProductDisplayInfos(ProductRequest request, ServerCallContext context)
         {
+            _logger.LogInformation($"{nameof(GetProductDisplayInfos)} start");
             var response = new ProductResponse();
             if (request.Items.Count == 0) return response;
 
             var productIds = request.Items.Select(x => x.Id).Distinct().ToList();
             var variantIds = request.Items.Select(x => x.VariantId).Distinct().ToList();
 
-           
+
             var productVariants = await _unitOfWork.Repository<ProductVariant>()
                 .Entities
                 .AsNoTracking() // Thêm cái này vì ný chỉ đọc, giúp tăng tốc độ truy vấn
                 .Include(x => x.Product)
                 .Where(v => variantIds.Contains(v.Id) && v.IsDeleted != true && v.Product.IsDeleted != true)
-                 // Sửa x thành v ở đây ný ơi
+                // Sửa x thành v ở đây ný ơi
                 .ToListAsync();
             if (productVariants == null || !productVariants.Any())
             {
@@ -59,12 +62,13 @@ namespace Ecom.ProductService.Application.Service.Web
                 };
                 response.Products.Add(productInfo);
             }
-            
+            _logger.LogInformation($"{nameof(GetProductDisplayInfos)} end");
             return response;
         }
 
         public override async Task<ProductResponse> GetProductCheckoutDetails(ProductRequest request, ServerCallContext context)
         {
+            _logger.LogInformation($"{nameof(GetProductCheckoutDetails)} start");
             var response = new ProductResponse();
             var productIds = request.Items.Select(x => x.Id).Distinct().ToList();
             var variantIds = request.Items.Select(x => x.VariantId).Distinct().ToList();
@@ -94,8 +98,9 @@ namespace Ecom.ProductService.Application.Service.Web
                     });
                 }
             }
+            _logger.LogInformation($"{nameof(GetProductCheckoutDetails)} end");
             return response;
         }
     }
-    
+
 }
