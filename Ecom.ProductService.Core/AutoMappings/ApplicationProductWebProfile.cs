@@ -24,18 +24,14 @@ namespace Ecom.ProductService.Core.AutoMappings
 
             // Map chính cho Product Detail
             CreateMap<Product, ProductDetailDto>()
-             .ForMember(d => d.FullDescription, opt => opt.MapFrom(s => s.ProductGroup.Description))
              .ForMember(d => d.BrandName, opt => opt.MapFrom(s => s.Brand.Name))
-             .ForMember(d => d.IsActive, opt => opt.MapFrom(s => s.Status == (byte)EntityStatus.Active || s.PublishDate <= DateTime.UtcNow))
+             .ForMember(d => d.IsActive, opt => opt.MapFrom(s => s.Status == (byte)EntityStatus.Active))
              .ForMember(d => d.IsStockAvailable, opt => opt.MapFrom(s => s.Status == (byte)EntityStatus.Active))
             // Map List đơn giản
             .ForMember(dest => dest.Images, opt => opt.MapFrom(src =>
                     src.ProductImages.Where(img => img.IsDeleted != true &&
-                                                    src.ProductVariants.Any(v => v.Id == (img.VariantId ?? 0)))))
+                                                    src.ProductVariants.Any(v => v.Id == (img.VariantId)))))
             .ForMember(d => d.Variants, opt => opt.MapFrom(s => s.ProductVariants.Where(x => x.IsActive == true && x.IsDeleted != true)))
-             // Map GroupProducts (Các sản phẩm cùng Group)
-             .ForMember(d => d.GroupProducts, opt => opt.MapFrom(s => s.ProductGroup.Products))
-             // Lấy danh sách Attribute phẳng (Sau đó Service sẽ Group lại sau)
              .ForMember(d => d.Specifications, opt => opt.Ignore())
              .ForMember(d => d.Breadcrumbs, opt => opt.Ignore());
 

@@ -100,11 +100,11 @@ namespace Ecom.ProductService.Application.Service.Web
             dto.Breadcrumbs = await _productRepo.GetBreadcrumbsAsync(dto.Id);
 
             // 4. Logic xử lý RAM: Đánh dấu sản phẩm hiện tại trong Group
-            if (dto.GroupProducts != null)
-            {
-                foreach (var p in dto.GroupProducts)
-                    p.IsCurrent = p.NameAscii == slug;
-            }
+            //if (dto.GroupProducts != null)
+            //{
+            //    foreach (var p in dto.GroupProducts)
+            //        p.IsCurrent = p.NameAscii == slug;
+            //}
 
             return Result<ProductDetailDto>.Success(dto, "Thành công.");
         }

@@ -31,14 +31,12 @@ namespace Ecom.ProductService.Core.Models.Dtos.ProductWeb
         // Laptop > Gaming > ASUS
         public List<BreadcrumbDto> Breadcrumbs { get; set; } = new();
 
-
-
         // --- Media (Ảnh Slide) ---
         public List<ProductImageDto> Images { get; set; } = new();
 
         // --- Biến thể & Nhóm (Chọn Màu/Chọn Model) ---
         public List<ProductVariantDto> Variants { get; set; } = new(); // Chọn Màu
-        public List<RelatedProductDto> GroupProducts { get; set; } = new(); // Các model khác trong cùng ProductGroup
+        //public List<RelatedProductDto> GroupProducts { get; set; } = new(); // Các model khác trong cùng ProductGroup
 
         // --- Thông số kỹ thuật (Specs) ---
         public List<AttributeGroupDto> Specifications { get; set; } = new();

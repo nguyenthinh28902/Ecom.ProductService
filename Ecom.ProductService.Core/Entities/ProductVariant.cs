@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecom.ProductService.Core.Entities;
 
+[Index("NameAscii", Name = "IX_ProductVariants_NameAscii")]
+[Index("Price", Name = "IX_ProductVariants_Price")]
 [Index("Sku", Name = "UQ__ProductV__CA1ECF0D85E9B0E5", IsUnique = true)]
 public partial class ProductVariant
 {
@@ -48,4 +50,7 @@ public partial class ProductVariant
     [ForeignKey("ProductId")]
     [InverseProperty("ProductVariants")]
     public virtual Product Product { get; set; } = null!;
+
+    [InverseProperty("Variant")]
+    public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 }

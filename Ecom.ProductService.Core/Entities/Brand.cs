@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecom.ProductService.Core.Entities;
 
+[Index("Name", Name = "IX_Brands_Name")]
 [Index("NameAscii", Name = "UQ__Brands__448353502861DDD8", IsUnique = true)]
 public partial class Brand
 {

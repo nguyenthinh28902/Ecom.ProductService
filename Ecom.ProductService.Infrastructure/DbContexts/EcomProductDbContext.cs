@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Ecom.ProductService.Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Attribute = Ecom.ProductService.Core.Entities.Attribute;
 
 namespace Ecom.ProductService.Infrastructure.DbContexts;
 
@@ -17,7 +18,8 @@ public partial class EcomProductDbContext : DbContext
     {
     }
 
-    public virtual DbSet<Core.Entities.Attribute> Attributes { get; set; }
+
+    public virtual DbSet<Attribute> Attributes { get; set; }
 
     public virtual DbSet<AttributeGroup> AttributeGroups { get; set; }
 
@@ -43,7 +45,7 @@ public partial class EcomProductDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Core.Entities.Attribute>(entity =>
+        modelBuilder.Entity<Attribute>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Attribut__3214EC07AD3D0B44");
 
@@ -172,6 +174,8 @@ public partial class EcomProductDbContext : DbContext
             entity.HasOne(d => d.Product).WithMany(p => p.ProductImages)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Image_Product");
+
+            entity.HasOne(d => d.Variant).WithMany(p => p.ProductImages).HasConstraintName("FK_ProductImages_ProductVariants");
         });
 
         modelBuilder.Entity<ProductVariant>(entity =>

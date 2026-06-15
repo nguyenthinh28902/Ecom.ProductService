@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecom.ProductService.Core.Entities;
 
+[Index("ProductId", "VariantId", Name = "IX_PriceHistories_ProductId_VariantId")]
 public partial class PriceHistory
 {
     [Key]

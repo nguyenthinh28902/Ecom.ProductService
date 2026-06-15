@@ -11,6 +11,7 @@ using Ecom.ProductService.Core.Models.Dtos.Navigation;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace Ecom.ProductService.Application.Service.Web
@@ -41,13 +42,37 @@ namespace Ecom.ProductService.Application.Service.Web
             if (cachedData != null) return Result<ProductFilterMenuViewModel>.Success(cachedData, "Lấy thông tin thành công.");
 
             //  Gọi Repo chuyên biệt cho luồng Đọc
+           
             var brands = await _brandRepo.GetNavigationBrandsAsync();
             var categories = await _categoryRepo.GetNavigationCategoriesAsync();
-
             var result = new ProductFilterMenuViewModel { Brands = brands, Categories = categories };
-            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(60));
+            
+            result.Categories = BuildCategoryTree(categories);
+                       await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(60));
 
             return Result<ProductFilterMenuViewModel>.Success(result, "Lấy thông tin thành công.");
+        }
+
+        private static List<CategoryDto> BuildCategoryTree(List<CategoryDto> categories)
+        {
+            var lookup = categories.ToDictionary(x => x.Id);
+
+            var roots = new List<CategoryDto>();
+
+            foreach (var category in categories)
+            {
+                if (category.ParentId.HasValue &&
+                    lookup.TryGetValue(category.ParentId.Value, out var parent))
+                {
+                    parent.SubCategories.Add(category);
+                }
+                else
+                {
+                    roots.Add(category);
+                }
+            }
+
+            return roots;
         }
     }
 }

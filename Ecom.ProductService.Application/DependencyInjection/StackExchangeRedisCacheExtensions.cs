@@ -19,15 +19,20 @@ namespace Ecom.ProductService.Application.DependencyInjection
             // 2. Đăng ký StackExchangeRedis với thông số từ Model
             services.AddStackExchangeRedisCache(options =>
             {
+                // 1. Parse connection string vào Object cấu hình
                 var configOptions = ConfigurationOptions.Parse(redisSettings.RedisConnectionString);
-                options.Configuration = redisSettings.RedisConnectionString;
-                configOptions.ConnectTimeout = 1000;
-                configOptions.SyncTimeout = 500;
-                configOptions.AsyncTimeout = 500;
-                configOptions.ConnectRetry = 0;
-                configOptions.AbortOnConnectFail = false;
 
-                options.ConfigurationOptions = configOptions;         
+                // 2. Cấu hình Timeout siêu ngắn để tránh treo Thread
+                configOptions.ConnectTimeout = 100;     // 100ms để kết nối (Mặc định: 5000ms)
+                configOptions.SyncTimeout = 100;        // 100ms cho lệnh đồng bộ (Mặc định: 5000ms)
+                configOptions.AsyncTimeout = 100;       // 100ms cho lệnh bất đồng bộ (Mặc định: 5000ms)
+
+                // 3. Quản lý việc kết nối lại khi có sự cố
+                configOptions.ConnectRetry = 1;         // Thử lại tối đa 1 lần nếu mất kết nối (Tránh loop vô hạn)
+                configOptions.AbortOnConnectFail = false; // QUAN TRỌNG: Redis chết ứng dụng vẫn khởi động bình thường
+
+                // 4. Gán Object cấu hình vào options (KHÔNG set options.Configuration nữa)
+                options.ConfigurationOptions = configOptions;
                 options.InstanceName = redisSettings.InstanceName;
             });
 

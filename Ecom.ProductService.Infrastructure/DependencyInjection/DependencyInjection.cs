@@ -22,8 +22,12 @@ namespace Ecom.ProductService.Infrastructure.DependencyInjection
             // Đăng ký DbContext sử dụng SQL Server
             services.AddDbContext<EcomProductDbContext>(options =>
                 options.UseSqlServer(ConnectionStrings.ProductMasterDb));
-            services.AddDbContext<ReadOnlyDbContext>(options =>
-                options.UseSqlServer(ConnectionStrings.ProductReplicationDb));
+            services.AddDbContext<ReadOnlyDbContext>(options => {
+                options.UseSqlServer(ConnectionStrings.ProductReplicationDb);
+                options.EnableSensitiveDataLogging(); // Cho phép log chi tiết dữ liệu, hữu ích cho việc debug
+                options.EnableSensitiveDataLogging();
+            });
+                    
 
 
             //add kiến trúc repo and UoW

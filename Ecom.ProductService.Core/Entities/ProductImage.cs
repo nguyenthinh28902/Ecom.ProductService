@@ -13,7 +13,7 @@ public partial class ProductImage
 
     public int ProductId { get; set; }
 
-    public int? VariantId { get; set; }
+    public int VariantId { get; set; }
 
     [StringLength(500)]
     [Unicode(false)]
@@ -34,4 +34,8 @@ public partial class ProductImage
     [ForeignKey("ProductId")]
     [InverseProperty("ProductImages")]
     public virtual Product Product { get; set; } = null!;
+
+    [ForeignKey("VariantId")]
+    [InverseProperty("ProductImages")]
+    public virtual ProductVariant Variant { get; set; } = null!;
 }

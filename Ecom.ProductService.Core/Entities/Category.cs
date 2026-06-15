@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecom.ProductService.Core.Entities;
 
+[Index("Name", Name = "IX_Categories_Name")]
 [Index("NameAscii", Name = "UQ__Categori__44835350E115998C", IsUnique = true)]
 public partial class Category
 {

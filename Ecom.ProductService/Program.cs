@@ -4,6 +4,8 @@ using Ecom.ProductService.Common.Extensions;
 using Ecom.ProductService.Common.Helpers;
 using Ecom.ProductService.Common.Middleware;
 using Ecom.ProductService.Controllers.Web;
+using Elastic.Apm.AspNetCore;
+using Elastic.Apm.NetCoreAll;
 using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -14,6 +16,10 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext() // Quan trọng để bắt được UserId, RequestId
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+        theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code
+    )
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -36,11 +42,13 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 // apication DI
 builder.Services.AddApplicationDI(builder.Configuration);
-
+//builder.Services.AddAllElasticApm();
 try
 {
     Log.Information("Service {AppName} đang khởi động...", nameof(Ecom.ProductService));
     var app = builder.Build();
+     //app.UseAllElasticApm(builder.Configuration); // Hết sạch lỗi cảnh báo!
+    
     app.UseMiddleware<CorrelationIdMiddleware>();
     app.UseMiddleware<ExceptionMiddleware>();
     // Configure the HTTP request pipeline.

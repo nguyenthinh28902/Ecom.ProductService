@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecom.ProductService.Core.Entities;
 
+[Index("Name", Name = "IX_ProductGroups_Name")]
 public partial class ProductGroup
 {
     [Key]

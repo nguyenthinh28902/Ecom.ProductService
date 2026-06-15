@@ -16,7 +16,9 @@ namespace Ecom.ProductService.Core.AutoMappings
 
             // Mapping cho Category (Xử lý đệ quy cho menu cha - con)
             CreateMap<Category, CategoryDto>()
-                .ForMember(dest => dest.SubCategories, opt => opt.MapFrom(src => src.InverseParent));
+                .ForMember(x => x.SubCategories,
+                 opt => opt.Ignore());
+                
         }
     }
 }

@@ -10,7 +10,7 @@
             // Kiểm tra xem header có mã chưa, chưa có thì tạo mới
             if (!context.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
             {
-                // 2. Nếu không có trong Header, thử tìm trong Metadata (Trường hợp gRPC đặc thù)
+                // Nếu không có trong Header, thử tìm trong Metadata (Trường hợp gRPC đặc thù)
                 // Một số hệ thống dùng lowercase 'x-correlation-id' cho gRPC
                 if (!context.Request.Headers.TryGetValue("x-correlation-id", out correlationId))
                 {
